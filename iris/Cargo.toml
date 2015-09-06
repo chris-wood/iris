@@ -2,3 +2,9 @@
 name = "iris"
 version = "0.1.0"
 authors = ["Christopher Wood <christopherwood07@gmail.com>"]
+
+[[bin]]
+name = "iris"
+
+[dependencies.byteorder]
+git = "https://github.com/BurntSushi/byteorder.git"

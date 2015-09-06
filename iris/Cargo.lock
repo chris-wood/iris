@@ -1,0 +1,12 @@
+[root]
+name = "iris"
+version = "0.1.0"
+dependencies = [
+ "byteorder 0.3.11 (git+https://github.com/BurntSushi/byteorder.git)",
+]
+
+[[package]]
+name = "byteorder"
+version = "0.3.11"
+source = "git+https://github.com/BurntSushi/byteorder.git#36d13bef501915421de0a214ff46af1269205700"
+
