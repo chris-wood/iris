@@ -27,7 +27,7 @@ fn main() {
     let mut file_contents = Vec::new();
     match file.read_to_end(&mut file_contents) {
         Err(why) => panic!("couldn't read {}: {}", display, Error::description(&why)),
-        Ok(val) => print!("{}", val)
+        Ok(_) => {}
     }
 
     let buffer = &file_contents[..];
