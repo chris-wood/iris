@@ -24,12 +24,13 @@ fn main() {
         Ok(file) => file,
     };
 
-    let mut file_contents = Vec<u8>::new();
+    let mut file_contents = Vec::new();
     match file.read_to_end(&mut file_contents) {
-        Err(why) => panic!("couldn't read {}: {}", display, Error::description(&why))
+        Err(why) => panic!("couldn't read {}: {}", display, Error::description(&why)),
+        Ok(val) => print!("{}", val)
     }
 
-    let buffer = file_contents.as_slice();
+    let buffer = &file_contents[..];
 
     // simple TLV
     //let xs: [u8; 5] = [1, 2, 0, 1, 0]; // (1 << 8) | 2
