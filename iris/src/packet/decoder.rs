@@ -4,7 +4,8 @@ pub fn decode_packet_intro(slice: &[u8], mut offset: usize) {
     // Decode the fixed header
     let version: u8 = decode_tlv_parse_one(slice, offset); offset += 1;
     let msg_type: u8 = decode_tlv_parse_one(slice, offset); offset += 1;
-    let plength: u16 = decode_tlv_parse_two(slice, offset); offset += 2;
+    let mut plength: u16 = decode_tlv_parse_two(slice, offset); offset += 2;
+    plength = plength - 8; // packet length includes the fixed header
     let rsvd: u16 = decode_tlv_parse_two(slice, offset); offset += 2;
     let flags: u8 = decode_tlv_parse_one(slice, offset); offset += 1;
     let header_length: u8 = decode_tlv_parse_one(slice, offset); offset += 1;
@@ -12,6 +13,7 @@ pub fn decode_packet_intro(slice: &[u8], mut offset: usize) {
     // Debug header info
     println!("TLV = {} {} {}", version, msg_type, plength);
     if msg_type == 0 {
+        println!("interest time...");
         decode_tlv_interest(plength, &slice[offset .. (offset + plength as usize)]);
     } else if msg_type == 1 {
         decode_tlv_content_object(plength, &slice[offset .. (offset + plength as usize)]);
