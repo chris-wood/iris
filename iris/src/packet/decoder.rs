@@ -1,3 +1,5 @@
+use packet::message as message;
+
 // TODO: this should just be decode_tlv
 pub fn decode_packet_intro(slice: &[u8], mut offset: usize) {
 
@@ -13,11 +15,21 @@ pub fn decode_packet_intro(slice: &[u8], mut offset: usize) {
     // Debug header info
     println!("TLV = {} {} {}", version, msg_type, plength);
     println!("      {}", rsvd);
-    if msg_type == 0 {
-        decode_tlv_interest(slice, plength, offset);
-    } else if msg_type == 1 {
-        decode_tlv_content_object(slice, plength, offset);
-    }
+
+    let mut msg = message::Message{
+        packet_type: message::PacketType::Interest,
+        name_offset: 0,
+        name_length: 0,
+        payload_offset: 0,
+        payload_length: 0,
+        validation_offset: 0,
+        validation_length: 0
+    };
+
+    // TODO: create the message here
+    let mut consumed: usize = decode_tlv_toplevel(&mut msg, slice, plength, offset);
+
+    msg.print();
 }
 
 fn decode_tlv_parse_one(slice: &[u8], offset: usize) -> (u8) {
@@ -28,35 +40,23 @@ fn decode_tlv_parse_two(slice: &[u8], offset: usize) -> (u16) {
     return ((slice[offset] as u16) << 8) | (slice[offset + 1] as u16);
 }
 
-fn decode_tlv_interest(slice: &[u8], plength: u16, mut offset: usize) {
-    println!("decoding an interest");
+fn decode_tlv_validation_algorithm(msg: &mut message::Message, slice: &[u8], plength: u16, mut offset: usize) -> (usize) {
+    return 0;
 }
 
-fn decode_tlv_content_object(slice: &[u8], plength: u16, mut offset: usize) {
-    println!("decoding a content object");
-    let mut consumed: usize = decode_tlv_message(slice, plength, offset);
+fn decode_tlv_validation_payload(msg: &mut message::Message, slice: &[u8], plength: u16, mut offset: usize) -> (usize) {
+    return 0;
 }
 
-fn decode_tlv_message(slice: &[u8], plength: u16, mut offset: usize) -> (usize) {
-    let top_type: u16 = decode_tlv_parse_two(slice, offset); offset += 2;
-    let top_length: u16 = decode_tlv_parse_two(slice, offset); offset += 2;
-
-    println!("top level TL = {} {}", top_type, top_length);
-
-    // TODO: replace these magic numbers with constants
-    // TODO: do something different for each type?
-    if top_type == 1 {
-
-    } else if top_type == 2 {
-
-    }
-
+fn decode_tlv_message(msg: &mut message::Message, slice: &[u8], plength: u16, mut offset: usize) -> (usize) {
     // The name is mandatory
+    msg.name_offset = offset;
     let mut next_type: u16 = decode_tlv_parse_two(slice, offset); offset += 2;
     let mut next_length: u16 = decode_tlv_parse_two(slice, offset); offset += 2;
+    msg.name_length = next_length as usize;
     println!("TL = {} {}", next_type, next_length);
     if next_type == 0 {
-        offset = decode_tlv_name_value(slice, next_length, offset);
+        offset = decode_tlv_name_value(msg, slice, next_length, offset);
     }
 
     // Check what's next
@@ -64,24 +64,41 @@ fn decode_tlv_message(slice: &[u8], plength: u16, mut offset: usize) -> (usize) 
     next_length = decode_tlv_parse_two(slice, offset); offset += 2;
     println!("TL = {} {}", next_type, next_length);
     if next_type == 1 {
+        msg.payload_offset = offset - 4;
         offset = decode_tlv_payload_value(slice, next_length, offset);
+        msg.payload_length = next_length as usize;
     }
 
     return offset;
 }
 
-fn decode_tlv_payload_value(slice: &[u8], plength: u16,  mut offset: usize) -> (usize) {
-    let payload_value: &[u8] = &slice[offset .. (offset + plength as usize)];
+fn decode_tlv_toplevel(msg: &mut message::Message, slice: &[u8], plength: u16, mut offset: usize) -> (usize) {
+    while offset < (plength as usize) {
+        let top_type: u16 = decode_tlv_parse_two(slice, offset); offset += 2;
+        let top_length: u16 = decode_tlv_parse_two(slice, offset); offset += 2;
+        println!("top level TL = {} {}", top_type, top_length);
 
-    for b in payload_value {
-        print!("{:X} ", b);
+        if top_type == (message::TopLevelType::Interest as u16) {
+            println!("interest");
+            offset = decode_tlv_message(msg, slice, plength, offset);
+        } else if top_type == (message::TopLevelType::ContentObject as u16) {
+            println!("data");
+            offset = decode_tlv_message(msg, slice, plength, offset);
+        } else if top_type == (message::TopLevelType::ValidationAlgorithm as u16) {
+            println!("validation alg.");
+            offset = decode_tlv_validation_algorithm(msg, slice, plength, offset);
+        } else if top_type == (message::TopLevelType::ValidationPayload as u16) {
+            println!("validation payload");
+            offset = decode_tlv_validation_payload(msg, slice, plength, offset);
+        } else {
+            // TODO: throw exception!
+        }
     }
-    println!("");
 
     return offset;
 }
 
-fn decode_tlv_name_value(slice: &[u8], plength: u16,  mut offset: usize) -> (usize) {
+fn decode_tlv_name_value(msg: &mut message::Message, slice: &[u8], plength: u16,  mut offset: usize) -> (usize) {
     let target: usize = (plength as usize) + offset;
     while offset < target {
         let name_segment_type: u16 = decode_tlv_parse_two(slice, offset); offset += 2;
@@ -96,5 +113,24 @@ fn decode_tlv_name_value(slice: &[u8], plength: u16,  mut offset: usize) -> (usi
         println!("");
     }
 
+    return offset;
+}
+
+fn decode_tlv_payload_value(slice: &[u8], plength: u16,  mut offset: usize) -> (usize) {
+    let payload_value: &[u8] = &slice[offset .. (offset + plength as usize)];
+
+    for b in payload_value {
+        print!("{:X} ", b);
+    }
+    println!("");
+
+    return offset + (plength as usize);
+}
+
+fn decode_tlv_validation_payload_value(slice: &[u8], plength: u16,  mut offset: usize) -> (usize) {
+    return offset;
+}
+
+fn decode_tlv_validation_algorithm_value(slice: &[u8], plength: u16,  mut offset: usize) -> (usize) {
     return offset;
 }
