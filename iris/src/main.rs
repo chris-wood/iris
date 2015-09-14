@@ -1,8 +1,6 @@
-mod cs;
-mod fib;
-mod fwd;
 pub mod packet;
-mod pit;
+mod common;
+mod fwd;
 
 use std::env;
 use std::error::Error;
@@ -37,4 +35,6 @@ fn main() {
     //packet::decode_packet(&xs);
 
     packet::decode_packet(buffer);
+
+    let mut fwd = fwd::Forwarder::new();
 }
