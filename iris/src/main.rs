@@ -30,10 +30,6 @@ fn main() {
 
     let buffer = &file_contents[..];
 
-    // simple TLV
-    //let xs: [u8; 5] = [1, 2, 0, 1, 0]; // (1 << 8) | 2
-    //packet::decode_packet(&xs);
-
     packet::decode_packet(buffer);
 
     let mut fwd = fwd::Forwarder::new();
