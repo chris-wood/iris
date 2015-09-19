@@ -1,8 +1,11 @@
-use fwd::fib as fib;
-use fwd::pit as pit;
-use fwd::cs as cs;
+use core::datastructure::fib as fib;
+use core::datastructure::pit as pit;
+use core::datastructure::cs as cs;
 
-struct Forwarder {
+use common;
+use packet;
+
+pub struct Forwarder {
     cs: cs::Cache,
     pit: pit::PIT,
     fib: fib::FIB

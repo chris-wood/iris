@@ -1,6 +1,6 @@
 use std::vec;
 use common::name as name;
-use fwd::face as face;
+use core::face as face;
 
 pub struct FIBEntry {
     name: name::Name,

@@ -1,9 +1,15 @@
 use std::vec;
+// use std::io::Timer;
+// use std::time::Duration;
 use common::name as name;
+use core::face as face;
 
 struct PITntry {
     name: name::Name,
-    // TODO
+    keyIdRestriction: Vec<u8>,
+    hashRestriction: Vec<u8>,
+    arrivalFaces: Vec<face::Face>,
+    lifetime: u32, // number of epochs
 }
 
 pub struct PIT {
