@@ -1,3 +1,5 @@
+use std::string::String as String;
+
 pub enum TopLevelType {
     Interest = 0x0001,
     ContentObject = 0x0002,
@@ -39,12 +41,12 @@ enum ContentObjectMessageTLVType {
 }
 
 enum ValidationType {
-    CRC32 = 0x0002,
-    HMAC_SHA256 = 0x0004,
-    VMAC_128 = 0x0005,
-    RSA_SHA256 = 0x0006,
-    EC_SECP_256K1 = 0x0007,
-    EC_SECP_384R1 = 0x0008,
+    Crc32 = 0x0002,
+    HmacSha256 = 0x0004,
+    Vmac128 = 0x0005,
+    RsaSha256 = 0x0006,
+    EcSecp256K1 = 0x0007,
+    EcSecp384R1 = 0x0008,
 }
 
 enum ValidationDependentDataType {
@@ -56,27 +58,50 @@ enum ValidationDependentDataType {
 }
 
 pub struct Message {
+    pub message_bytes: Vec<u8>,
     pub packet_type: PacketType,
     pub name_offset: usize,
     pub name_length: usize,
     pub payload_offset: usize,
     pub payload_length: usize,
     pub validation_offset: usize,
-    pub validation_length: usize
+    pub validation_length: usize,
+    pub message_name: String
 }
 
 impl Message {
     // A public constructor
-    pub fn new(new_packet_type: PacketType, new_payload_offset: usize, new_payload_length: usize, new_validation_offset: usize, new_validation_length: usize) -> Message {
-        Message {
+    pub fn new(bytes: &[u8], new_packet_type: PacketType, new_payload_offset: usize, new_payload_length: usize, new_validation_offset: usize, new_validation_length: usize) -> Message {
+        let mut byteVector = Vec::new();
+        for b in bytes {
+            byteVector.push(*b);
+        }
+        return Message {
+            message_bytes: byteVector,
             name_offset: 0,
             name_length: 0,
             packet_type: new_packet_type,
             payload_offset: new_payload_offset,
             payload_length: new_payload_length,
             validation_offset: new_validation_offset,
-            validation_length: new_validation_length
+            validation_length: new_validation_length,
+            message_name: String::new()
         }
+    }
+
+    pub fn getName(self) -> String {
+        let name_bytes = &self.message_bytes[self.name_offset .. (self.name_offset + self.name_length)];
+        let mut name_vector = Vec::new();
+        for b in name_bytes {
+            name_vector.push(*b);
+        }
+
+        let nameString = match String::from_utf8(name_vector) {
+            Ok(v) => v,
+            Err(e) => panic!("Invalid UTF-8 sequence: {}", e),
+        };
+
+        return nameString;
     }
 
     pub fn print(self) {

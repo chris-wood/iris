@@ -1,7 +1,7 @@
 use packet::message as message;
 
 // TODO: this should just be decode_tlv
-pub fn decode_packet_intro(slice: &[u8], mut offset: usize) {
+pub fn decode_packet_intro(slice: &[u8], mut offset: usize) -> (message::Message) {
 
     // Decode the fixed header
     let version: u8 = decode_tlv_parse_one(slice, offset); offset += 1;
@@ -16,20 +16,27 @@ pub fn decode_packet_intro(slice: &[u8], mut offset: usize) {
     println!("TLV = {} {} {}", version, msg_type, plength);
     println!("      {}", rsvd);
 
+    let mut byteVector = Vec::new();
+    for b in slice {
+        byteVector.push(*b);
+    }
+
     let mut msg = message::Message{
+        message_bytes: byteVector,
         packet_type: message::PacketType::Interest,
         name_offset: 0,
         name_length: 0,
         payload_offset: 0,
         payload_length: 0,
         validation_offset: 0,
-        validation_length: 0
+        validation_length: 0,
+        message_name: String::new()
     };
 
     // TODO: create the message here
     let mut consumed: usize = decode_tlv_toplevel(&mut msg, slice, plength, offset);
 
-    msg.print();
+    return msg;
 }
 
 fn decode_tlv_parse_one(slice: &[u8], offset: usize) -> (u8) {
