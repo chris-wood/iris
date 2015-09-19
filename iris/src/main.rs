@@ -1,6 +1,6 @@
-pub mod packet;
+mod packet;
 mod common;
-mod fwd;
+mod core;
 
 use std::env;
 use std::error::Error;
@@ -28,9 +28,10 @@ fn main() {
         Ok(_) => {}
     }
 
-    let buffer = &file_contents[..];
+    let buffer = &file_contents[..]; // take reference to the entire thing (i.e., a slice)
 
-    packet::decode_packet(buffer);
+    let msg = packet::decode_packet(buffer);
+    msg.print();
 
-    let mut fwd = fwd::Forwarder::new();
+    // let fwd = fwd::Forwarder::new();
 }
