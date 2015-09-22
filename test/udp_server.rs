@@ -3,7 +3,7 @@ use std::thread;
 
 fn main()
 {
-    let attempt = UdpSocket::bind("127.0.0.1:9999");
+    let attempt = UdpSocket::bind("localhost:9596");
     let mut socket;
     match attempt {
         Ok(sock) => {
@@ -11,11 +11,11 @@ fn main()
             socket = sock;
         },
         Err(err) => {
-            panic!("Unable to bind to 127.0.0.1:9999");
-        } 
+            panic!("Unable to bind to localhost:9596");
+        }
     }
 
-    let mut buf = [0; 10];
+    let mut buf = [0; 256];
     let receiveAttempt = socket.recv_from(&mut buf);
     match(receiveAttempt) {
         Ok((amt, src)) => {
@@ -26,8 +26,5 @@ fn main()
         }
     }
 
-    thread::sleep_ms(3000);
-
     drop(socket); // close the socket
 }
-
