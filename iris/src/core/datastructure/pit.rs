@@ -2,13 +2,13 @@ use std::vec;
 // use std::io::Timer;
 // use std::time::Duration;
 use common::name as name;
-use core::face as face;
+use core::link as link;
 
 struct PITntry {
     name: name::Name,
     keyIdRestriction: Vec<u8>,
     hashRestriction: Vec<u8>,
-    arrivalFaces: Vec<face::Face>,
+    arrivalFaces: Vec<Box<link::Link>>,
     lifetime: u32, // number of epochs
 }
 

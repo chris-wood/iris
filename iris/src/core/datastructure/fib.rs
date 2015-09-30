@@ -1,10 +1,10 @@
 use std::vec;
 use common::name as name;
-use core::face as face;
+use core::link as link;
 
 pub struct FIBEntry {
     name: name::Name,
-    faces: Vec<face::Face>
+    faces: Vec<Box<link::Link>>
 }
 
 pub struct FIB {
@@ -22,7 +22,7 @@ impl FIB {
         return false;
     }
 
-    pub fn insert(target: name::Name, newFace: face::Face) -> (bool) {
+    pub fn insert(target: name::Name, newFace: Box<link::Link>) -> (bool) {
         return false;
     }
 }
