@@ -165,19 +165,6 @@ impl LinkListener for UDPLinkListener {
                 }
             }
         }
-        // let receiveAttempt = self.socket.recv_from(&mut buf);
-        // let mut dest;
-        // match(receiveAttempt) {
-        //     Ok ((amt, dst)) => {
-        //         println!("Received {}", amt);
-        //         dest = dst;
-        //     },
-        //     Err(err) => {
-        //         panic!("Failed to receive content.");
-        //     }
-        // }
-        // let link = UDPLink::new(0, self.socket, dest);
-        // return link;
     }
 }
 
