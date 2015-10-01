@@ -1,5 +1,6 @@
 mod packet;
 mod common;
+mod control;
 mod core;
 
 use std::env;
@@ -8,8 +9,11 @@ use std::io::prelude::*;
 use std::fs::File;
 use std::path::Path;
 
+
+use std::net::{SocketAddrV4, UdpSocket, IpAddr, Ipv4Addr};
+
 fn main() {
-    println!("IRIS v0.0.1");
+    println!("iris v0.0.1");
 
     let args: Vec<String> = env::args().collect();
     // let file_name: String = String::from(args[1]);
@@ -33,5 +37,15 @@ fn main() {
     let msg = packet::decode_packet(buffer);
     msg.print();
 
-    // let fwd = fwd::Forwarder::new();
+    // Create the forwarder
+    let fwd = core::Forwarder::new();
+
+    // Create listeners for all faces
+    let localhost = Ipv4Addr::new(127,0,0,1);
+    let defaultUdpAddr = std::net::SocketAddrV4::new(localhost, 9696);
+    let defaultUdpListener = core::link::UDPLinkListener::new(defaultUdpAddr);
+    defaultUdpListener.listen();
+
+    // Open the command REPL
+    control::control_repl();
 }
