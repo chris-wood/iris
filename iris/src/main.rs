@@ -4,6 +4,7 @@ mod control;
 mod core;
 
 use std::env;
+use std::thread;
 use std::error::Error;
 use std::io::prelude::*;
 use std::fs::File;
@@ -39,12 +40,41 @@ fn main() {
     // Create the forwarder
     let fwd = core::Forwarder::new();
 
+    let mut listeners = Vec::new();
+
     // Create listeners for all faces
     let localhost = Ipv4Addr::new(127,0,0,1);
     let defaultUdpAddr = std::net::SocketAddrV4::new(localhost, 9696);
     let defaultUdpListener = core::link::UDPLinkListener::new(defaultUdpAddr);
-    defaultUdpListener.listen();
+    let listenResult = defaultUdpListener.listen();
+    match listenResult {
+        Ok(listener) => {
+            println!("Created the UDP listener");
+            listeners.push(listener);
+        },
+        Err(e) => {
+            println!("Could not listen on UDP path");
+        }
+    }
+
+    let defaultTcpAddr = std::net::SocketAddrV4::new(localhost, 9697);
+    let defaultTcpListener = core::link::TCPLinkListener::new(defaultTcpAddr);
+    let listenResult = defaultTcpListener.listen();
+    match listenResult {
+        Ok(listener) => {
+            println!("Created the TCP listener");
+            listeners.push(listener);
+        },
+        Err(e) => {
+            println!("Could not listen on TCP path");
+        }
+    }
 
     // Open the command REPL
     control::control_repl();
+
+    println!("Joining on the listeners");
+    for listener in listeners {
+        listener.join();
+    }
 }
