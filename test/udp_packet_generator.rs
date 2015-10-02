@@ -8,7 +8,7 @@ use std::path::Path;
 
 fn main()
 {
-    let attempt = UdpSocket::bind("localhost:9999");
+    let attempt = UdpSocket::bind("127.0.0.1:9001");
     let mut socket;
     match attempt {
         Ok(sock) => {
@@ -16,7 +16,7 @@ fn main()
             socket = sock;
         },
         Err(err) => {
-            panic!("Unable to bind to 127.0.0.1:9695");
+            panic!("Unable to bind to 127.0.0.1:9001");
         }
     }
 
@@ -37,13 +37,13 @@ fn main()
     }
     let buffer = &file_contents[..]; // take reference to the entire thing (i.e., a slice)
 
-    let result = socket.send_to(buffer, "localhost:9596");
+    let result = socket.send_to(buffer, "127.0.0.1:9696");
     match result {
         Ok(bytes) => {
             println!("Sent {} bytes", bytes);
         },
         Err(err) => {
-            panic!("Failed to send to localhost:9999");
+            panic!("Failed to send to 127.0.0.1:9696");
         }
     }
 

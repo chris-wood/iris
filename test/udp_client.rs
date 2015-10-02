@@ -12,7 +12,7 @@ fn main()
         },
         Err(err) => {
             panic!("Unable to bind to 127.0.0.1:9695");
-        } 
+        }
     }
 
     //let mut buf = [0; 10];
@@ -21,7 +21,7 @@ fn main()
     let raw = [1; 10];
     let buf = &raw[..10];
 
-    let result = socket.send_to(buf, "localhost:9999");
+    let result = socket.send_to(buf, "localhost:9696");
     match result {
         Ok(bytes) => {
             println!("Sent {} bytes", bytes);
@@ -30,9 +30,8 @@ fn main()
             panic!("Failed to send to localhost:9999");
         }
     }
-    
+
     thread::sleep_ms(3000);
 
     drop(socket); // close the socket
 }
-
