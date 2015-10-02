@@ -1,5 +1,6 @@
 use std::vec;
 use std::thread;
+use std::thread::JoinHandle;
 use std::io::Write;
 
 use std::net::UdpSocket;
@@ -109,8 +110,13 @@ impl Link for TCPLink {
     }
 }
 
+pub enum LinkListenerError {
+    CouldNotSpawnThread,
+    CouldNotCloneSocket
+}
+
 pub trait LinkListener {
-    fn listen(&self);
+    fn listen(&self) -> Result<JoinHandle<()>, LinkListenerError>;
 }
 
 pub struct UDPLinkListener {
@@ -141,30 +147,44 @@ impl UDPLinkListener {
 }
 
 impl LinkListener for UDPLinkListener {
-    fn listen(&self) {
-        let mut buf = [0; 4096]; // 4k MTU
-        loop {
-            match self.socket.recv_from(&mut buf) {
-                Ok((amt, src)) => {
-                    let clone = self.socket.try_clone();
-                    match clone {
-                        Ok(socket) => {
-                            thread::spawn(move || {
-                                print!("start the link!");
-                                let link = UDPLink::new(0, socket, src);
-                                link.run();
-                            });
-                        },
-                        Err(e) => {
-                            println!("Couldn't clone the UdpSocket to start the link");
+    fn listen(&self) -> Result<JoinHandle<()>, LinkListenerError> {
+        let clone = self.socket.try_clone();
+        match clone {
+            Ok(socket) => {
+                let listenerThread = thread::spawn(move || {
+                    println!("Inner loop listener");
+                    let mut buf = [0; 4096]; // 4k MTU for UDP, by default
+                    loop {
+                        match socket.recv_from(&mut buf) {
+                            Ok((amt, src)) => {
+                                let clone = socket.try_clone();
+                                match clone {
+                                    Ok(socket) => {
+                                        thread::spawn(move || {
+                                            print!("start the link!");
+                                            let link = UDPLink::new(0, socket, src);
+                                            link.run();
+                                        });
+                                    },
+                                    Err(e) => {
+                                        println!("Couldn't clone the UdpSocket to start the link");
+                                    }
+                                }
+                            },
+                            Err(e) => {
+                                println!("couldn't recieve a datagram: {}", e);
+                            }
                         }
-                    }
-                },
-                Err(e) => {
-                    println!("couldn't recieve a datagram: {}", e);
-                }
+                    };
+                    println!("done with the loop?...");
+                });
+                return Ok(listenerThread);
+            },
+            Err(e) => {
+                return Err(LinkListenerError::CouldNotCloneSocket);
             }
         }
+        return Err(LinkListenerError::CouldNotSpawnThread);
     }
 }
 
@@ -196,20 +216,31 @@ impl TCPLinkListener {
 }
 
 impl LinkListener for TCPLinkListener {
-    fn listen(&self) {
-        for stream in self.listener.incoming() {
-            match stream {
-                Ok(stream) => {
-                    let addr = stream.peer_addr().unwrap();
-                    thread::spawn(move || {
-                        print!("start the link!");
-                        let link = TCPLink::new(0, stream, addr);
-                        link.run();
-                    });
-                }
-                Err(e) => {
-                    panic!(format!("Failed to create a new stream from the listener"));
-                }
+    fn listen(&self) -> Result<JoinHandle<()>, LinkListenerError> {
+        let listener = self.listener.try_clone();
+        match listener {
+            Ok(realListener) => {
+                let listenerThread = thread::spawn(move || {
+                    for stream in realListener.incoming() {
+                        match stream {
+                            Ok(stream) => {
+                                let addr = stream.peer_addr().unwrap();
+                                thread::spawn(move || {
+                                    print!("start the link!");
+                                    let link = TCPLink::new(0, stream, addr);
+                                    link.run();
+                                });
+                            }
+                            Err(e) => {
+                                panic!(format!("Failed to create a new stream from the listener"));
+                            }
+                        }
+                    }
+                });
+                return Ok(listenerThread);
+            },
+            Err(e) => {
+                return Err(LinkListenerError::CouldNotCloneSocket);
             }
         }
     }
