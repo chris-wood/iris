@@ -1,4 +1,3 @@
-mod packet;
 mod common;
 mod control;
 mod core;
