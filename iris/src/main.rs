@@ -33,7 +33,7 @@ fn main() {
 
     let buffer = &file_contents[..]; // take reference to the entire thing (i.e., a slice)
 
-    let msg = packet::decode_packet(buffer);
+    let msg = core::packet::decode_packet(buffer);
     msg.print();
 
     // Create the forwarder

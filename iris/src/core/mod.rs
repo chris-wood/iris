@@ -1,13 +1,13 @@
 pub mod datastructure;
 pub mod link;
 pub mod core;
+pub mod packet;
 
 use core::datastructure::fib as fib;
 use core::datastructure::pit as pit;
 use core::datastructure::cs as cs;
 
 use common;
-use packet;
 
 pub struct Forwarder {
     cs: cs::Cache,
