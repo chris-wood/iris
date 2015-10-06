@@ -2,11 +2,20 @@ use std::sync::mpsc::Receiver;
 use std::sync::mpsc;
 
 use core;
-use packet;
+use core::packet;
 use core::Forwarder as Forwarder;
-use packet::message::Message as Message;
+use core::packet::message::Message as Message;
 
 pub struct Processor {
-    fwd: Forwarder,
+    fwd: &Forwarder,
     queue: Receiver<Message>
+}
+
+impl Processor {
+    pub fn new(fwdRef: &Forwarder, channel: Receiver<Message>) -> Processor {
+        Processor {
+            fwd: fwdRef,
+            queue: channel.clone()
+        }
+    }
 }

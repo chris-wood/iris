@@ -8,6 +8,8 @@ use std::error::Error;
 use std::io::prelude::*;
 use std::fs::File;
 use std::path::Path;
+use std::sync::mpsc::{Sender,Receiver};
+use std::sync::mpsc;
 
 use std::net::{SocketAddrV4, UdpSocket, IpAddr, Ipv4Addr};
 
@@ -38,6 +40,8 @@ fn main() {
 
     // Create the forwarder
     let fwd = core::Forwarder::new();
+    let (tx, rx): (Sender<core::packet::message::Message>, Receiver<core::packet::message::Message>) = mpsc::channel();
+    let processor = core::processor::Processor::new(&fwd, rx);
 
     let mut listeners = Vec::new();
 
