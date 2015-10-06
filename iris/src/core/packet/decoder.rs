@@ -1,4 +1,4 @@
-use packet::message as message;
+use core::packet::message as message;
 
 // TODO: this should just be decode_tlv
 pub fn decode_packet_intro(slice: &[u8], mut offset: usize) -> (message::Message) {
