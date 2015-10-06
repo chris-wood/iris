@@ -38,7 +38,7 @@ fn main() {
     let msg = core::packet::decode_packet(buffer);
     msg.print();
 
-    // Create the forwarder
+    // Create the forwarder and message processor
     let fwd = core::Forwarder::new();
     let (tx, rx): (Sender<core::packet::message::Message>, Receiver<core::packet::message::Message>) = mpsc::channel();
     let processor = core::processor::Processor::new(fwd, rx);
