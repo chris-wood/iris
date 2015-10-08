@@ -18,4 +18,9 @@ impl Processor {
             queue: channel
         }
     }
+
+    pub fn process_message(&self, msg: Message) {
+        // TODO: (1) CS, (2) PIT, (3) FIB
+        // if (self.fwd.cs.lookup(msg.))
+    }
 }
