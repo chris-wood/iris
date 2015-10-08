@@ -89,17 +89,20 @@ impl Message {
         }
     }
 
-    pub fn getName(self) -> String {
+    pub fn get_name(self) -> String {
         let name_bytes = &self.message_bytes[self.name_offset .. (self.name_offset + self.name_length)];
-        let mut name_vector = Vec::new();
+        let mut byte_vector = Vec::new();
         for b in name_bytes {
-            name_vector.push(*b);
+            byte_vector.push(*b);
         }
 
-        let nameString = match String::from_utf8(name_vector) {
+        let nameString = match String::from_utf8(byte_vector) {
             Ok(v) => v,
             Err(e) => panic!("Invalid UTF-8 sequence: {}", e),
         };
+
+        let mut name_vector = Vec::new();
+        // TODO: split the string by "/" and push each component into the vector
 
         return nameString;
     }
