@@ -1,5 +1,8 @@
 use std::string::String as String;
 
+use common::name as name;
+use common::name::Name as Name;
+
 pub enum TopLevelType {
     Interest = 0x0001,
     ContentObject = 0x0002,
@@ -89,22 +92,25 @@ impl Message {
         }
     }
 
-    pub fn get_name(self) -> String {
+    pub fn get_name(self) -> Name {
         let name_bytes = &self.message_bytes[self.name_offset .. (self.name_offset + self.name_length)];
         let mut byte_vector = Vec::new();
         for b in name_bytes {
             byte_vector.push(*b);
         }
 
-        let nameString = match String::from_utf8(byte_vector) {
+        let name_string = match String::from_utf8(byte_vector) {
             Ok(v) => v,
             Err(e) => panic!("Invalid UTF-8 sequence: {}", e),
         };
 
         let mut name_vector = Vec::new();
-        // TODO: split the string by "/" and push each component into the vector
+        let splits:Vec<&str> = name_string.split('/').collect();
+        for component in splits {
+            name_vector.push(String::from(component));
+        }
 
-        return nameString;
+        return Name::new(name_vector);
     }
 
     pub fn print(self) {
