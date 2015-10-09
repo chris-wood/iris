@@ -1,8 +1,8 @@
 use std::vec;
-use common::name as name;
+use common::name::Name as Name;
 
 struct CacheEntry {
-    name: name::Name,
+    name: Name,
     // TODO: data
 }
 
@@ -17,11 +17,11 @@ impl Cache {
         }
     }
 
-    pub fn lookup(target: name::Name) -> (bool) { // TODO: should return data element and bool
+    pub fn lookup(target: Name) -> (bool) { // TODO: should return data element and bool
         return false;
     }
 
-    pub fn insert(target: name::Name) -> (bool) { // TODO: should add data element to be inserted
+    pub fn insert(target: Name) -> (bool) { // TODO: should add data element to be inserted
         return false;
     }
 }

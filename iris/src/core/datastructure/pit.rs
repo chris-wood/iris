@@ -1,14 +1,14 @@
 use std::vec;
 // use std::io::Timer;
 // use std::time::Duration;
-use common::name as name;
-use core::link as link;
+use common::name::Name as Name;
+use core::link::Link as Link;
 
 struct PITntry {
-    name: name::Name,
+    name: Name,
     keyIdRestriction: Vec<u8>,
     hashRestriction: Vec<u8>,
-    arrivalFaces: Vec<Box<link::Link>>,
+    arrivalFaces: Vec<Box<Link>>,
     lifetime: u32, // number of epochs
 }
 
@@ -23,11 +23,11 @@ impl PIT {
         }
     }
 
-    pub fn lookup(target: name::Name) -> (bool) { // TODO: should add PIT-related info to the list, and should return the PIT entry
+    pub fn lookup(target: Name) -> (bool) { // TODO: should add PIT-related info to the list, and should return the PIT entry
         return false;
     }
 
-    pub fn insert(target: name::Name) -> (bool) { // TODO: should add PIT-related info to the list
+    pub fn insert(target: Name) -> (bool) { // TODO: should add PIT-related info to the list
         return false;
     }
 }

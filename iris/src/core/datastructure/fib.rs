@@ -1,10 +1,10 @@
 use std::vec;
-use common::name as name;
-use core::link as link;
+use common::name::Name as Name;
+use core::link::Link as Link;
 
 pub struct FIBEntry {
-    name: name::Name,
-    faces: Vec<Box<link::Link>>
+    name: Name,
+    faces: Vec<Box<Link>>
 }
 
 pub struct FIB {
@@ -18,11 +18,14 @@ impl FIB {
         }
     }
 
-    pub fn lookup(target: name::Name) -> (bool) { // TODO: should return FIBEntry and bool
+    pub fn lookup(target: Name) -> (bool) { // TODO: should return FIBEntry and bool
         return false;
     }
 
-    pub fn insert(target: name::Name, newFace: Box<link::Link>) -> (bool) {
+    pub fn insert(&self, target: Name, newFace: Box<Link>) -> (bool) {
+        for &entry in self.entries {
+            // TODO
+        }
         return false;
     }
 }
