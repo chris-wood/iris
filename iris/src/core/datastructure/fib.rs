@@ -22,10 +22,21 @@ impl FIB {
         return false;
     }
 
-    pub fn insert(&self, target: Name, newFace: Box<Link>) -> (bool) {
-        for &entry in self.entries {
-            // TODO
+    pub fn insert(&mut self, target: Name, newFace: Box<Link>) -> (bool) {
+        for entry in self.entries.iter_mut() {
+            if entry.name.equals(&target) {
+                entry.faces.push(newFace);
+                return true;
+            }
         }
-        return false;
+
+        let new_name = target.clone();
+        let mut entry = FIBEntry {
+            name: new_name,
+            faces: Vec::new()
+        };
+        entry.faces.push(newFace);
+
+        return true;
     }
 }
