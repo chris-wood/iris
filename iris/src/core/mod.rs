@@ -19,7 +19,7 @@ pub struct Forwarder {
 impl Forwarder {
     pub fn new() -> Forwarder {
         Forwarder {
-            cs: cs::Cache::new(),
+            cs: cs::Cache::new(0),
             pit: pit::PIT::new(),
             fib: fib::FIB::new()
         }

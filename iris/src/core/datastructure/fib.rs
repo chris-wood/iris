@@ -36,6 +36,7 @@ impl FIB {
             faces: Vec::new()
         };
         entry.faces.push(newFace);
+        self.entries.push(entry);
 
         return true;
     }

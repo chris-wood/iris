@@ -19,10 +19,10 @@ fn setup_listeners() {
 
     // Create listeners for all faces
     let localhost = Ipv4Addr::new(127,0,0,1);
-    let defaultUdpAddr = std::net::SocketAddrV4::new(localhost, 9696);
-    let defaultUdpListener = core::link::UDPLinkListener::new(defaultUdpAddr);
-    let listenResult = defaultUdpListener.listen();
-    match listenResult {
+    let default_udp_addr = std::net::SocketAddrV4::new(localhost, 9696);
+    let default_udp_listener = core::link::UDPLinkListener::new(default_udp_addr);
+    let listen_result = default_udp_listener.listen();
+    match listen_result {
         Ok(listener) => {
             println!("Created the UDP listener");
             listeners.push(listener);
@@ -32,10 +32,10 @@ fn setup_listeners() {
         }
     }
 
-    let defaultTcpAddr = std::net::SocketAddrV4::new(localhost, 9697);
-    let defaultTcpListener = core::link::TCPLinkListener::new(defaultTcpAddr);
-    let listenResult = defaultTcpListener.listen();
-    match listenResult {
+    let default_tcp_addr = std::net::SocketAddrV4::new(localhost, 9697);
+    let default_tcp_listener = core::link::TCPLinkListener::new(default_tcp_addr);
+    let listen_result = default_tcp_listener.listen();
+    match listen_result {
         Ok(listener) => {
             println!("Created the TCP listener");
             listeners.push(listener);
