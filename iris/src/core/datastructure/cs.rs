@@ -1,13 +1,15 @@
 use std::vec;
 use common::name::Name as Name;
 
-struct CacheEntry {
+#[derive(Debug)]
+pub struct CacheEntry {
     name: Name,
     keyIdRestriction: Vec<u8>,
     hashRestriction: Vec<u8>,
     data: Vec<u8>
 }
 
+#[derive(Debug)]
 pub struct Cache {
     size: usize,
     entries: Vec<CacheEntry>
@@ -35,8 +37,16 @@ impl Cache {
         }
     }
 
-    pub fn lookup(&mut self, target: &Name, key_id_restr: &Vec<u8>, hash_restr: &Vec<u8>) -> Option<&CacheEntry> {
-        for entry in self.entries.iter_mut() {
+    pub fn dump_contents(&self) {
+    print!("dump_contents() start.");
+        for entry in self.entries.iter() {
+            println!("entry {:?}", entry);
+        }
+        print!("dump_contents() done.");
+    }
+
+    pub fn lookup(&self, target: &Name, key_id_restr: &Vec<u8>, hash_restr: &Vec<u8>) -> Option<&CacheEntry> {
+        for entry in self.entries.iter() {
             if entry.name.equals(&target) {
                 if compare_vectors(&entry.keyIdRestriction, key_id_restr) {
                     if compare_vectors(&entry.hashRestriction, hash_restr) {

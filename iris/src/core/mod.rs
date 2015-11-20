@@ -9,18 +9,18 @@ use core::datastructure::cs as cs;
 
 use common;
 
-pub struct Forwarder {
-    cs: cs::Cache,
-    pit: pit::PIT,
-    fib: fib::FIB
+pub struct Forwarder<'a> {
+    pub cs: &'a cs::Cache,
+    pub pit: &'a pit::PIT,
+    pub fib: &'a fib::FIB
 }
 
-impl Forwarder {
-    pub fn new() -> Forwarder {
+impl<'a> Forwarder<'a> {
+    pub fn new(fcs: &'a cs::Cache, fpit: &'a pit::PIT, ffib: &'a fib::FIB) -> Forwarder<'a> {
         Forwarder {
-            cs: cs::Cache::new(0),
-            pit: pit::PIT::new(),
-            fib: fib::FIB::new()
+            cs: fcs,
+            pit: fpit,
+            fib: ffib
         }
     }
 }

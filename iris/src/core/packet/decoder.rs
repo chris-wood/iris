@@ -60,6 +60,8 @@ fn decode_tlv_validation_payload(msg: &mut message::Message, slice: &[u8], pleng
 }
 
 fn decode_tlv_message(msg: &mut message::Message, slice: &[u8], plength: u16, mut offset: usize) -> (usize) {
+    let start_offset = offset;
+
     // The name is mandatory
     msg.name_offset = offset;
     let mut next_type: u16 = decode_tlv_parse_two(slice, offset); offset += 2;
@@ -68,6 +70,12 @@ fn decode_tlv_message(msg: &mut message::Message, slice: &[u8], plength: u16, mu
     println!("TL = {} {}", next_type, next_length);
     if next_type == 0 {
         offset = decode_tlv_name_value(msg, slice, next_length, offset);
+    }
+
+    // Check to see if we've reached the end of the packet
+    if ((start_offset +(plength as usize)) == offset) {
+        println!("Done parsing the packet");
+        return offset;
     }
 
     // Check what's next
@@ -91,16 +99,16 @@ fn decode_tlv_toplevel(msg: &mut message::Message, slice: &[u8], plength: u16, m
 
         if top_type == (message::TopLevelType::Interest as u16) {
             println!("interest");
-            offset = decode_tlv_message(msg, slice, plength, offset);
+            offset = decode_tlv_message(msg, slice, top_length, offset);
         } else if top_type == (message::TopLevelType::ContentObject as u16) {
             println!("data");
-            offset = decode_tlv_message(msg, slice, plength, offset);
+            offset = decode_tlv_message(msg, slice, top_length, offset);
         } else if top_type == (message::TopLevelType::ValidationAlgorithm as u16) {
             println!("validation alg.");
-            offset = decode_tlv_validation_algorithm(msg, slice, plength, offset);
+            offset = decode_tlv_validation_algorithm(msg, slice, top_length, offset);
         } else if top_type == (message::TopLevelType::ValidationPayload as u16) {
             println!("validation payload");
-            offset = decode_tlv_validation_payload(msg, slice, plength, offset);
+            offset = decode_tlv_validation_payload(msg, slice, top_length, offset);
         } else {
             // TODO: throw exception!
         }
@@ -112,6 +120,7 @@ fn decode_tlv_toplevel(msg: &mut message::Message, slice: &[u8], plength: u16, m
 fn decode_tlv_name_value(msg: &mut message::Message, slice: &[u8], plength: u16,  mut offset: usize) -> (usize) {
     let target: usize = (plength as usize) + offset;
     while offset < target {
+        println!("Reading next TLV for the name...");
         let name_segment_type: u16 = decode_tlv_parse_two(slice, offset); offset += 2;
         let name_segment_length: u16 = decode_tlv_parse_two(slice, offset); offset += 2;
         let name_segment_value: &[u8] = &slice[offset .. (offset + name_segment_length as usize)];
@@ -124,7 +133,12 @@ fn decode_tlv_name_value(msg: &mut message::Message, slice: &[u8], plength: u16,
         println!("");
     }
 
-    return offset;
+    if (target != offset) {
+        println!("An error occurred!");
+        return -1;
+    }
+
+    return target;
 }
 
 fn decode_tlv_payload_value(slice: &[u8], plength: u16,  mut offset: usize) -> (usize) {

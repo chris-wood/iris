@@ -1,6 +1,7 @@
 use std::vec::Vec as Vec;
 use std::string::String as String;
 
+#[derive(Debug)]
 pub struct Name {
     components: Vec<String>
 }
@@ -35,7 +36,7 @@ impl Name {
         return name;
     }
 
-    pub fn equals(&mut self, target: &Name) -> (bool) {
+    pub fn equals(&self, target: &Name) -> (bool) {
         let self_size: usize = self.len();
         let target_size: usize = target.len();
 

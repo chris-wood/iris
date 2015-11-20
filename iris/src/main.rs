@@ -2,6 +2,10 @@ mod common;
 mod control;
 mod core;
 
+use core::datastructure::fib as fib;
+use core::datastructure::pit as pit;
+use core::datastructure::cs as cs;
+
 use std::env;
 use std::thread;
 use std::thread::JoinHandle;
@@ -62,6 +66,17 @@ fn run(listeners: Vec<JoinHandle<()>>) {
 fn main() {
     println!("iris v0.0.1");
 
+    let fcs = cs::Cache::new(0);
+    let fpit = pit::PIT::new();
+    let ffib = fib::FIB::new();
+
+    // Create the forwarder and message processor
+    let mut fwd = core::Forwarder::new(&fcs, &fpit, &ffib);
+
+    let (tx, rx): (Sender<core::packet::message::Message>, Receiver<core::packet::message::Message>) = mpsc::channel();
+
+    let processor = core::processor::Processor::new(&mut fwd, rx);
+
     let args: Vec<String> = env::args().collect();
     // let file_name: String = String::from(args[1]);
 
@@ -81,16 +96,11 @@ fn main() {
 
     let buffer = &file_contents[..]; // take reference to the entire thing (i.e., a slice)
 
-    // Create the forwarder and message processor
-    let fwd = core::Forwarder::new();
-    let (tx, rx): (Sender<core::packet::message::Message>, Receiver<core::packet::message::Message>) = mpsc::channel();
-    let processor = core::processor::Processor::new(fwd, rx);
-
     let msg = core::packet::decode_packet(buffer);
     processor.process_message(msg);
 
-    let listeners = setup_listeners();
-    run(listeners);
+    //let listeners = setup_listeners();
+    //run(listeners);
 
 //    let name = msg.get_name();
 //    let mut index = 0;

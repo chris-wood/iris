@@ -6,13 +6,13 @@ use core::packet;
 use core::Forwarder as Forwarder;
 use core::packet::message::Message as Message;
 
-pub struct Processor {
-    fwd: Forwarder,
+pub struct Processor<'a> {
+    fwd: &'a Forwarder<'a>,
     queue: Receiver<Message>
 }
 
-impl Processor {
-    pub fn new(fwdRef: Forwarder, channel: Receiver<Message>) -> Processor {
+impl<'a> Processor<'a> {
+    pub fn new(fwdRef: &'a Forwarder<'a>, channel: Receiver<Message>) -> Processor<'a> {
         Processor {
             fwd: fwdRef,
             queue: channel
@@ -20,8 +20,19 @@ impl Processor {
     }
 
     fn process_interest(&self, msg: Message) {
-        println!("Processing an interest.")
-        // TODO
+        println!("Processing an interest.");
+        let mut name = msg.get_name();
+
+        //let mut key_id_restr = Vec::new();
+        //let mut hash_restr = Vec::new();
+
+        let cs = self.fwd.cs;
+        cs.dump_contents();
+
+        let cs_match = match self.fwd.cs_lookup(&name, &key_id_restr, &hash_restr) {
+            Some(entry) => println!("In the cache!"),
+            None => println!("Not in the cache!"),
+        };
     }
 
     fn process_content(&self, msg: Message) {
