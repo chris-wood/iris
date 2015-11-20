@@ -10,6 +10,7 @@ pub enum TopLevelType {
     ValidationPayload = 0x0004
 }
 
+#[derive(PartialEq)]
 pub enum PacketType {
     Interest = 0x0000,
     ContentObject = 0x0001,

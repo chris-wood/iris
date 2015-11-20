@@ -33,6 +33,10 @@ pub fn decode_packet_intro(slice: &[u8], mut offset: usize) -> (message::Message
         message_name: String::new()
     };
 
+    if msg_type == (message::PacketType::ContentObject as u8) {
+        msg.packet_type = message::PacketType::ContentObject;
+    }
+
     // TODO: create the message here
     let mut consumed: usize = decode_tlv_toplevel(&mut msg, slice, plength, offset);
 

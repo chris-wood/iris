@@ -14,7 +14,7 @@ use std::sync::mpsc;
 
 use std::net::{SocketAddrV4, UdpSocket, IpAddr, Ipv4Addr};
 
-fn setup_listeners() {
+fn setup_listeners() -> Vec<JoinHandle<()>> {
     let mut listeners = Vec::new();
 
     // Create listeners for all faces
@@ -44,6 +44,8 @@ fn setup_listeners() {
             println!("Could not listen on TCP path");
         }
     }
+
+    return listeners;
 }
 
 fn setup_control() {
@@ -86,4 +88,14 @@ fn main() {
 
     let msg = core::packet::decode_packet(buffer);
     processor.process_message(msg);
+
+    let listeners = setup_listeners();
+    run(listeners);
+
+//    let name = msg.get_name();
+//    let mut index = 0;
+//    while index < name.len() {
+//        println!("{}", name.at(index));
+//        index = index + 1;
+//    }
 }

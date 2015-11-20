@@ -77,6 +77,7 @@ impl Link for UDPLink {
     }
 
     fn run(&self) {
+        println!("Inside the the UDP link run() function");
         loop {
             // TODO... listen for data, and then send it to the forwarder
         }
@@ -152,16 +153,18 @@ impl LinkListener for UDPLinkListener {
         match clone {
             Ok(socket) => {
                 let listenerThread = thread::spawn(move || {
-                    println!("Inner loop listener");
+                    println!("Inner UDP loop listener");
                     let mut buf = [0; 4096]; // 4k MTU for UDP, by default
                     loop {
                         match socket.recv_from(&mut buf) {
                             Ok((amt, src)) => {
+                                println!("Got a message");
                                 let clone = socket.try_clone();
                                 match clone {
                                     Ok(socket) => {
+                                        println!("Cloned OK--starting a link.");
                                         thread::spawn(move || {
-                                            print!("start the link!");
+                                            print!("start the new UDP link!");
                                             let link = UDPLink::new(0, socket, src);
                                             link.run();
                                         });

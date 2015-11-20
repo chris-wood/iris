@@ -1,6 +1,5 @@
 pub mod datastructure;
 pub mod link;
-pub mod core;
 pub mod packet;
 pub mod processor;
 
