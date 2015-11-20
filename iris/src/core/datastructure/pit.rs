@@ -39,8 +39,8 @@ impl PIT {
 
     // TODO: make keyId and hashRest Optional
 
-    pub fn lookup(&mut self, target: &Name, key_id_restr: &Vec<u8>, hash_restr: &Vec<u8>) -> Option<&PITEntry> {
-        for entry in self.entries.iter_mut() {
+    pub fn lookup(&self, target: &Name, key_id_restr: &Vec<u8>, hash_restr: &Vec<u8>) -> Option<&PITEntry> {
+        for entry in self.entries.iter() {
             if entry.name.equals(&target) {
                 if compare_vectors(&entry.keyIdRestriction, key_id_restr) {
                     if compare_vectors(&entry.hashRestriction, hash_restr) {

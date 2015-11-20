@@ -23,15 +23,29 @@ impl<'a> Processor<'a> {
         println!("Processing an interest.");
         let mut name = msg.get_name();
 
-        //let mut key_id_restr = Vec::new();
-        //let mut hash_restr = Vec::new();
+        let mut key_id_restr = Vec::new();
+        let mut hash_restr = Vec::new();
 
         let cs = self.fwd.cs;
         cs.dump_contents();
 
-        let cs_match = match self.fwd.cs_lookup(&name, &key_id_restr, &hash_restr) {
+        let cs_match = match cs.lookup(&name, &key_id_restr, &hash_restr) {
             Some(entry) => println!("In the cache!"),
-            None => println!("Not in the cache!"),
+            None => {
+                println!("Not in the cache!");
+
+                // TODO: lookup the PIT
+                let pit = self.fwd.pit;
+                let pit_match = match pit.lookup(&name, &key_id_restr, &hash_restr) {
+                    Some(entry) => println!("In the PIT!"),
+                    None => {
+                        println!("Not in the PIT!");
+
+                        // TODO: forward according to the FIB
+                        println!("Forward accordingly...");
+                    }
+                };
+            },
         };
     }
 
