@@ -8,7 +8,8 @@ pub struct PITEntry {
     name: Name,
     keyIdRestriction: Vec<u8>,
     hashRestriction: Vec<u8>,
-    arrivalFaces: Vec<Box<Link>>,
+    // arrivalFaces: Vec<Box<Link>>,
+    arrivalFaces: Vec<u16>, // make this mutable for its lifetime
     lifetime: u32, // number of epochs
 }
 
@@ -53,8 +54,11 @@ impl PIT {
         return None;
     }
 
-    pub fn insert(&mut self, target: &Name, key_id_restr: &Vec<u8>, hash_restr: &Vec<u8>, newFace: Box<Link>) -> (bool) {
+    // Can only be called by the owner! Oof!
+    pub fn insert(&mut self, target: &Name, key_id_restr: &Vec<u8>, hash_restr: &Vec<u8>, newFace: u16) -> (bool) {
+
         // TODO: replace this with a call to lookup, fixing the borrowed lifetime issue
+
         for entry in self.entries.iter_mut() {
             if entry.name.equals(&target) {
                 if compare_vectors(&entry.keyIdRestriction, key_id_restr) {
@@ -67,14 +71,13 @@ impl PIT {
         }
 
         let new_name = target.clone();
-        let mut entry = PITEntry {
+        let entry = PITEntry {
             name: new_name,
             keyIdRestriction: key_id_restr.clone(),
             hashRestriction: hash_restr.clone(),
-            arrivalFaces: Vec::new(),
+            arrivalFaces: vec![newFace],
             lifetime: 10 // TODO: completely arbitrary... make this a parameter
         };
-        entry.arrivalFaces.push(newFace);
         self.entries.push(entry);
 
         return true;

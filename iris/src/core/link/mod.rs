@@ -2,6 +2,7 @@ use std::vec;
 use std::thread;
 use std::thread::JoinHandle;
 use std::io::Write;
+use std::io::Read;
 
 use std::net::UdpSocket;
 use std::net::TcpStream;
@@ -9,48 +10,56 @@ use std::net::TcpListener;
 use std::net::SocketAddr;
 use std::net::SocketAddrV4;
 
+use std::sync::mpsc::{Sender,Receiver};
+use std::sync::mpsc;
+
 use common::name;
+use core;
 
 pub trait Link {
     // TODO: maybe rename run() to receive_from()?
-    fn run(&self);
+    fn run(&mut self);
     fn stop(&mut self);
     fn send_to(&mut self, wire_format: &[u8]) -> usize;
 }
 
 pub struct UDPLink {
-    linkId: u32,
+    linkId: u16,
     kill: bool,
     socket: UdpSocket,
-    dst: SocketAddr
+    dst: SocketAddr,
+    channel: Sender<(core::packet::message::Message, u16)>
 }
 
 impl UDPLink {
-    pub fn new(id: u32, socket: UdpSocket, dst: SocketAddr) -> (Box<Link>) {
+    pub fn new(id: u16, socket: UdpSocket, dst: SocketAddr, sender: Sender<(core::packet::message::Message, u16)>) -> (Box<Link>) {
         let link = UDPLink {
             linkId: id,
             kill: false,
             socket: socket,
             dst: dst,
+            channel: sender
         };
         return Box::new(link);
     }
 }
 
 pub struct TCPLink {
-    linkId: u32,
+    linkId: u16,
     kill: bool,
     stream: TcpStream,
-    dst: SocketAddr
+    dst: SocketAddr,
+    channel: Sender<(core::packet::message::Message, u16)>
 }
 
 impl TCPLink {
-    pub fn new(id: u32, stream: TcpStream, dst: SocketAddr) -> (Box<Link>) {
+    pub fn new(id: u16, stream: TcpStream, dst: SocketAddr, sender: Sender<(core::packet::message::Message, u16)>) -> (Box<Link>) {
         let link = TCPLink {
             linkId: id,
             kill: false,
             stream: stream,
-            dst: dst
+            dst: dst,
+            channel: sender
         };
         return Box::new(link);
     }
@@ -76,10 +85,18 @@ impl Link for UDPLink {
         self.kill = true;
     }
 
-    fn run(&self) {
+    fn run(&mut self) {
         println!("Inside the the UDP link run() function");
+        let mut buf = [0; 4096]; // 4k MTU for UDP, by default
         loop {
-            // TODO... listen for data, and then send it to the forwarder
+            match self.socket.recv_from(&mut buf) {
+                Ok((amt, src)) => {
+                    println!("Got a message: {}", buf.len());
+                },
+                Err(e) => {
+                    println!("Error: couldn't receive datagram {}", e);
+                }
+            }
         }
     }
 }
@@ -104,9 +121,32 @@ impl Link for TCPLink {
         self.kill = true;
     }
 
-    fn run(&self) {
+    fn run(&mut self) {
+        let mut buf = [0; 8192]; // 8k MTU for testing
         loop {
-            // TODO... listen for data, and then send it to the forwarder
+            let result = self.stream.read(&mut buf);
+            match result {
+                Ok(num_bytes) => {
+                    if num_bytes > 0 {
+                        println!("read {} bytes -- converting to a packet (or dropping)", num_bytes);
+                        let msg = core::packet::decode_packet(&buf[0..num_bytes]);
+                        let result = self.channel.send((msg, self.linkId));
+                        match result {
+                            Ok(m) => {
+                                println!("Sent message to the processor.");
+                            },
+                            Err(e) => {
+                                println!("Error: unable to send message to the processor.");
+                            }
+                        }
+                    } else {
+                        // println!("Read {} bytes!", num_bytes);
+                    }
+                },
+                Err(e) => {
+                    println!("read Error! {}", e);
+                }
+            }
         }
     }
 }
@@ -122,11 +162,12 @@ pub trait LinkListener {
 
 pub struct UDPLinkListener {
     address: SocketAddrV4,
-    socket: UdpSocket
+    socket: UdpSocket,
+    channel: Sender<(core::packet::message::Message, u16)>
 }
 
 impl UDPLinkListener {
-    pub fn new(addr: SocketAddrV4) -> Box<LinkListener> {
+    pub fn new(sender: Sender<(core::packet::message::Message, u16)>, addr: SocketAddrV4) -> Box<LinkListener> {
         let attempt = UdpSocket::bind(addr);
         let mut socket;
         match attempt {
@@ -141,7 +182,8 @@ impl UDPLinkListener {
 
         let listener = UDPLinkListener {
             address: addr,
-            socket: socket
+            socket: socket,
+            channel: sender
         };
         return Box::new(listener);
     }
@@ -152,20 +194,22 @@ impl LinkListener for UDPLinkListener {
         let clone = self.socket.try_clone();
         match clone {
             Ok(socket) => {
+                let channel = self.channel.clone();
                 let listenerThread = thread::spawn(move || {
                     println!("Inner UDP loop listener");
                     let mut buf = [0; 4096]; // 4k MTU for UDP, by default
                     loop {
                         match socket.recv_from(&mut buf) {
                             Ok((amt, src)) => {
-                                println!("Got a message");
+                                println!("Got a new connection message");
                                 let clone = socket.try_clone();
+                                let channel_clone = channel.clone();
                                 match clone {
                                     Ok(socket) => {
                                         println!("Cloned OK--starting a link.");
                                         thread::spawn(move || {
                                             print!("start the new UDP link!");
-                                            let link = UDPLink::new(0, socket, src);
+                                            let mut link = UDPLink::new(0, socket, src, channel_clone);
                                             link.run();
                                         });
                                     },
@@ -193,11 +237,12 @@ impl LinkListener for UDPLinkListener {
 
 pub struct TCPLinkListener {
     listener: TcpListener,
-    address: SocketAddrV4
+    address: SocketAddrV4,
+    channel: Sender<(core::packet::message::Message, u16)>
 }
 
 impl TCPLinkListener {
-    pub fn new(addr: SocketAddrV4) -> Box<LinkListener> {
+    pub fn new(sender: Sender<(core::packet::message::Message, u16)>, addr: SocketAddrV4) -> Box<LinkListener> {
         let attempt = TcpListener::bind(addr);
         let mut streamListener;
         match attempt {
@@ -213,6 +258,7 @@ impl TCPLinkListener {
         let listener = TCPLinkListener {
             listener: streamListener,
             address: addr,
+            channel: sender
         };
         return Box::new(listener);
     }
@@ -221,6 +267,7 @@ impl TCPLinkListener {
 impl LinkListener for TCPLinkListener {
     fn listen(&self) -> Result<JoinHandle<()>, LinkListenerError> {
         let listener = self.listener.try_clone();
+        let channel = self.channel.clone();
         match listener {
             Ok(realListener) => {
                 let listenerThread = thread::spawn(move || {
@@ -228,9 +275,10 @@ impl LinkListener for TCPLinkListener {
                         match stream {
                             Ok(stream) => {
                                 let addr = stream.peer_addr().unwrap();
+                                let channel_clone = channel.clone();
                                 thread::spawn(move || {
                                     print!("start the link!");
-                                    let link = TCPLink::new(0, stream, addr);
+                                    let mut link = TCPLink::new(0, stream, addr, channel_clone);
                                     link.run();
                                 });
                             }

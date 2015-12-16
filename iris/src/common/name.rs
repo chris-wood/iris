@@ -36,12 +36,12 @@ impl Name {
         return name;
     }
 
-    pub fn equals(&self, target: &Name) -> (bool) {
+    pub fn is_prefix_of(&self, target: &Name) -> (bool) {
         let self_size: usize = self.len();
         let target_size: usize = target.len();
 
-        if self_size != target_size {
-            return false;
+        if target_size > self_size {
+            return false; // impossible
         }
 
         let mut index: usize = 0;
@@ -53,5 +53,16 @@ impl Name {
         }
 
         return true;
+    }
+
+    pub fn equals(&self, target: &Name) -> (bool) {
+        let self_size: usize = self.len();
+        let target_size: usize = target.len();
+
+        if self.is_prefix_of(target) && self_size == target_size {
+            return true;
+        } else {
+            return false;
+        }
     }
 }

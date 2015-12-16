@@ -18,8 +18,13 @@ impl FIB {
         }
     }
 
-    pub fn lookup(target: Name) -> (bool) { // TODO: should return FIBEntry and bool
-        return false;
+    pub fn lookup(&self, target: &Name) -> Option<&FIBEntry> {
+        for entry in self.entries.iter() {
+            if entry.name.equals(&target) {
+                return Some(entry);
+            }
+        }
+        return None;
     }
 
     pub fn insert(&mut self, target: Name, newFace: Box<Link>) -> (bool) {

@@ -1,2 +1,2 @@
 all:
-	cargo run ../data/test_interest.bin ../data/test_data.bin
+	cargo run --verbose ../data/test_interest.bin ../data/test_data.bin 

@@ -7,62 +7,52 @@ use core::Forwarder as Forwarder;
 use core::packet::message::Message as Message;
 
 pub struct Processor<'a> {
-    fwd: &'a Forwarder<'a>,
-    queue: Receiver<Message>
+    fwd: Forwarder<'a>,
+    queue: Receiver<(Message, u16)>
 }
 
 impl<'a> Processor<'a> {
-    pub fn new(fwdRef: &'a Forwarder<'a>, channel: Receiver<Message>) -> Processor<'a> {
+    pub fn new(fwdRef: Forwarder<'a>, channel: Receiver<(Message, u16)>) -> Processor {
         Processor {
             fwd: fwdRef,
             queue: channel
         }
     }
 
-    fn process_interest(&self, msg: Message) {
-        println!("Processing an interest.");
-        let mut name = msg.get_name();
-
-        let mut key_id_restr = Vec::new();
-        let mut hash_restr = Vec::new();
-
-        let cs = self.fwd.cs;
-        cs.dump_contents();
-
-        let cs_match = match cs.lookup(&name, &key_id_restr, &hash_restr) {
-            Some(entry) => println!("In the cache!"),
-            None => {
-                println!("Not in the cache!");
-
-                // TODO: lookup the PIT
-                let pit = self.fwd.pit;
-                let pit_match = match pit.lookup(&name, &key_id_restr, &hash_restr) {
-                    Some(entry) => println!("In the PIT!"),
-                    None => {
-                        println!("Not in the PIT!");
-
-                        // TODO: forward according to the FIB
-                        println!("Forward accordingly...");
-                    }
-                };
-            },
-        };
+    pub fn run(&mut self) {
+        loop {
+            let attempt = self.queue.recv();
+            match attempt {
+                Ok((msg, face)) => {
+                    println!("Processing a message!");
+                    self.process_message(msg, face);
+                },
+                Err(e) => {
+                    println!("Error receiving a message");
+                }
+            }
+        }
     }
 
-    fn process_content(&self, msg: Message) {
-        println!("Processing a content object.")
+    fn process_interest(&mut self, msg: Message, incomingFace: u16) {
+        println!("Processing an interest...");
+        self.fwd.process_interest(msg, incomingFace);
+    }
+
+    fn process_content(&self, msg: Message, incomingFace: u16) {
+        println!("Processing a content object.");
         // TODO
     }
 
-    pub fn process_message(&self, msg: Message) {
+    pub fn process_message(&mut self, msg: Message, incomingFace: u16) {
         // TODO: (1) CS, (2) PIT, (3) FIB
         // if (self.fwd.cs.lookup(msg.))
         println!("here we go!");
 
         if msg.packet_type == core::packet::message::PacketType::Interest {
-            self.process_interest(msg);
+            self.process_interest(msg, incomingFace);
         } else if msg.packet_type == core::packet::message::PacketType::ContentObject {
-            self.process_content(msg);
+            self.process_content(msg, incomingFace);
         } else {
             // TODO: interest return
         }
