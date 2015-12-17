@@ -70,6 +70,7 @@ pub struct Message {
     pub payload_length: usize,
     pub validation_offset: usize,
     pub validation_length: usize,
+
     pub message_name: String
 }
 
@@ -93,7 +94,7 @@ impl Message {
         }
     }
 
-    pub fn get_name(self) -> Name {
+    pub fn get_name(&self) -> Name {
         let name_bytes = &self.message_bytes[self.name_offset .. (self.name_offset + self.name_length)];
         let mut byte_vector = Vec::new();
         for b in name_bytes {
@@ -113,6 +114,8 @@ impl Message {
 
         return Name::new(name_vector);
     }
+
+    // TODO: isControl, isInterest, isContentObject
 
     pub fn print(self) {
         println!("Packet Details:");

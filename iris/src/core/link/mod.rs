@@ -16,139 +16,40 @@ use std::sync::mpsc;
 use common::name;
 use core;
 
+mod udp_link;
+use core::link::udp_link::UDPLink as UDPLink;
+mod tcp_link;
+use core::link::tcp_link::TCPLink as TCPLink;
+
+use std::collections::HashMap;
+
+pub struct LinkTable {
+    links: HashMap<u16, Box<Link>> // http://doc.rust-lang.org/1.4.0/std/collections/struct.HashMap.html
+}
+
+impl LinkTable {
+    pub fn new() -> LinkTable {
+        LinkTable {
+            links: HashMap::new()
+        }
+    }
+
+    pub fn add_link(&mut self, id: u16, link: Box<Link>) {
+        self.links.insert(id, link);
+    }
+
+    pub fn get_link(&mut self, id: u16) -> &Box<Link> {
+        // if self.links.contains_key(id) {
+        //
+        // }
+        return self.links.get(&id).unwrap();
+    }
+}
+
 pub trait Link {
-    // TODO: maybe rename run() to receive_from()?
-    fn run(&mut self);
+    fn run(&mut self); // TODO: maybe rename run() to receive_from()?
     fn stop(&mut self);
     fn send_to(&mut self, wire_format: &[u8]) -> usize;
-}
-
-pub struct UDPLink {
-    linkId: u16,
-    kill: bool,
-    socket: UdpSocket,
-    dst: SocketAddr,
-    channel: Sender<(core::packet::message::Message, u16)>
-}
-
-impl UDPLink {
-    pub fn new(id: u16, socket: UdpSocket, dst: SocketAddr, sender: Sender<(core::packet::message::Message, u16)>) -> (Box<Link>) {
-        let link = UDPLink {
-            linkId: id,
-            kill: false,
-            socket: socket,
-            dst: dst,
-            channel: sender
-        };
-        return Box::new(link);
-    }
-}
-
-pub struct TCPLink {
-    linkId: u16,
-    kill: bool,
-    stream: TcpStream,
-    dst: SocketAddr,
-    channel: Sender<(core::packet::message::Message, u16)>
-}
-
-impl TCPLink {
-    pub fn new(id: u16, stream: TcpStream, dst: SocketAddr, sender: Sender<(core::packet::message::Message, u16)>) -> (Box<Link>) {
-        let link = TCPLink {
-            linkId: id,
-            kill: false,
-            stream: stream,
-            dst: dst,
-            channel: sender
-        };
-        return Box::new(link);
-    }
-}
-
-impl Link for UDPLink {
-    fn send_to(&mut self, wire_format: &[u8]) -> (usize) {
-        let result = self.socket.send_to(wire_format, self.dst);
-        let mut numBytes;
-        match result {
-            Ok(bytes) => {
-                println!("Sent {} bytes", bytes);
-                numBytes = bytes;
-            },
-            Err(err) => {
-                panic!("Failed to send to localhost:9999");
-            }
-        }
-        return numBytes;
-    }
-
-    fn stop(&mut self) {
-        self.kill = true;
-    }
-
-    fn run(&mut self) {
-        println!("Inside the the UDP link run() function");
-        let mut buf = [0; 4096]; // 4k MTU for UDP, by default
-        loop {
-            match self.socket.recv_from(&mut buf) {
-                Ok((amt, src)) => {
-                    println!("Got a message: {}", buf.len());
-                },
-                Err(e) => {
-                    println!("Error: couldn't receive datagram {}", e);
-                }
-            }
-        }
-    }
-}
-
-impl Link for TCPLink {
-    fn send_to(&mut self, wire_format: &[u8]) -> (usize) {
-        let result = self.stream.write(wire_format);
-        let mut numBytes;
-        match result {
-            Ok(bytes) => {
-                println!("Sent {} bytes", bytes);
-                numBytes = bytes;
-            },
-            Err(err) => {
-                panic!("Failed to send to localhost:9999");
-            }
-        }
-        return numBytes;
-    }
-
-    fn stop(&mut self) {
-        self.kill = true;
-    }
-
-    fn run(&mut self) {
-        let mut buf = [0; 8192]; // 8k MTU for testing
-        loop {
-            let result = self.stream.read(&mut buf);
-            match result {
-                Ok(num_bytes) => {
-                    if num_bytes > 0 {
-                        println!("read {} bytes -- converting to a packet (or dropping)", num_bytes);
-                        let msg = core::packet::decode_packet(&buf[0..num_bytes]);
-                        let result = self.channel.send((msg, self.linkId));
-                        match result {
-                            Ok(m) => {
-                                println!("Sent message to the processor.");
-                            },
-                            Err(e) => {
-                                println!("Error: unable to send message to the processor.");
-                            }
-                        }
-                    } else {
-                        // println!("Read {} bytes!", num_bytes);
-                    }
-                },
-                Err(e) => {
-                    println!("read Error! {}", e);
-                }
-            }
-        }
-    }
 }
 
 pub enum LinkListenerError {

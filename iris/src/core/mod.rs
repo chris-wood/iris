@@ -8,8 +8,19 @@ use core::datastructure::pit as pit;
 use core::datastructure::cs as cs;
 
 use core::packet::message::Message as Message;
+use common::name::Name as Name;
 
 use common;
+
+pub enum ForwarderResult {
+    CacheHit,
+    PitHit,
+    ForwardInterest
+}
+
+pub enum ForwarderError {
+    NoRouteInFib
+}
 
 pub struct Forwarder<'a> {
     pit: &'a mut pit::PIT,
@@ -26,10 +37,12 @@ impl<'a> Forwarder<'a> {
         }
     }
 
-    fn process_interest(&mut self, msg: Message, incomingFace: u16) {
+    fn process_interest(&mut self, msg: Message, incomingFace: u16) -> Result<(ForwarderResult, Option<Message>, u16), ForwarderError> {
         println!("Processing an interest.");
+
         let mut name = msg.get_name();
 
+        // TODO: need to implement the getters for these things
         let mut key_id_restr = Vec::new();
         let mut hash_restr = Vec::new();
 
@@ -37,8 +50,10 @@ impl<'a> Forwarder<'a> {
         cs.dump_contents();
 
         let cs_match = match cs.lookup(&name, &key_id_restr, &hash_restr) {
-            Some(entry) => println!("In the cache!"),
-            None => {
+            Some(entry) => {
+                println!("In the cache!");
+                return Ok((ForwarderResult::CacheHit, Some(msg), incomingFace));
+            }, None => {
                 println!("Not in the cache!");
 
                 // TODO: lookup the PIT
@@ -48,7 +63,7 @@ impl<'a> Forwarder<'a> {
                 let pit_match = match pit.lookup(&name, &key_id_restr, &hash_restr) {
                     Some(entry) => {
                         println!("In the PIT!");
-                        // TODO: do something else with it now...
+                        return Ok((ForwarderResult::PitHit, None, 0));
                     },
                     None => {
                         println!("Not in the PIT!");
@@ -62,10 +77,12 @@ impl<'a> Forwarder<'a> {
                         let fib = &self.fib;
                         let fib_match = match fib.lookup(&name) {
                             Some(entry) => {
-                                println!("In the FIB!")
+                                println!("In the FIB!");
+                                return Ok((ForwarderResult::ForwardInterest, Some(msg), entry.faces[0])); // TODO: this is where some strategy is applied.
                             },
                             None => {
                                 println!("No FIB entry--DROP!");
+                                return Err(ForwarderError::NoRouteInFib);
                             }
                         };
                     }

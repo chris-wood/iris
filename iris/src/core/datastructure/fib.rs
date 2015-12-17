@@ -4,7 +4,8 @@ use core::link::Link as Link;
 
 pub struct FIBEntry {
     name: Name,
-    faces: Vec<Box<Link>>
+    // faces: Vec<Box<Link>>
+    pub faces: Vec<u16>
 }
 
 pub struct FIB {
@@ -27,7 +28,7 @@ impl FIB {
         return None;
     }
 
-    pub fn insert(&mut self, target: Name, newFace: Box<Link>) -> (bool) {
+    pub fn insert(&mut self, target: Name, newFace: u16) -> (bool) {
         for entry in self.entries.iter_mut() {
             if entry.name.equals(&target) {
                 entry.faces.push(newFace);
