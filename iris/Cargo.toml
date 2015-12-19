@@ -8,3 +8,6 @@ name = "iris"
 
 [dependencies.byteorder]
 git = "https://github.com/BurntSushi/byteorder.git"
+
+[dependencies]
+mio = { git = "https://github.com/carllerche/mio" }
