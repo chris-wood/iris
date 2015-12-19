@@ -20,12 +20,12 @@ pub struct TCPLink {
     linkId: u16,
     kill: bool,
     stream: TcpStream,
-    dst: SocketAddr,
+    dst: Option<SocketAddr>,
     channel: Sender<(core::packet::message::Message, u16)>
 }
 
 impl TCPLink {
-    pub fn new(id: u16, stream: TcpStream, dst: SocketAddr, sender: Sender<(core::packet::message::Message, u16)>) -> (Box<Link>) {
+    pub fn new(id: u16, stream: TcpStream, dst: Option<SocketAddr>, sender: Sender<(core::packet::message::Message, u16)>) -> (Box<Link>) {
         let link = TCPLink {
             linkId: id,
             kill: false,

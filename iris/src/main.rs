@@ -18,7 +18,8 @@ use std::sync::mpsc;
 
 use std::net::{SocketAddrV4, UdpSocket, IpAddr, Ipv4Addr};
 
-fn setup_listeners(control_sender: Sender<String>, sender: Sender<(core::packet::message::Message, u16)>) -> Vec<JoinHandle<()>> {
+fn setup_listeners(control_sender: Sender<String>, sender: Sender<(core::packet::message::Message, u16)>) -> (Vec<Box<core::link::LinkListener>>, Vec<JoinHandle<()>>) {
+    let mut listen_handles = Vec::new();
     let mut listeners = Vec::new();
 
     // Default control listener interface
@@ -29,7 +30,7 @@ fn setup_listeners(control_sender: Sender<String>, sender: Sender<(core::packet:
     match listen_result {
         Ok(listener) => {
             println!("Created the control listener on 9698");
-            listeners.push(listener);
+            listen_handles.push(listener);
         },
         Err(e) => {
             println!("Could not listen on port 9698");
@@ -44,7 +45,7 @@ fn setup_listeners(control_sender: Sender<String>, sender: Sender<(core::packet:
     match listen_result {
         Ok(listener) => {
             println!("Created the UDP listener on 9696");
-            listeners.push(listener);
+            listen_handles.push(listener);
         },
         Err(e) => {
             println!("Could not listen on 9696");
@@ -58,14 +59,14 @@ fn setup_listeners(control_sender: Sender<String>, sender: Sender<(core::packet:
     match listen_result {
         Ok(listener) => {
             println!("Created the TCP listener on 9697");
-            listeners.push(listener);
+            listen_handles.push(listener);
         },
         Err(e) => {
             println!("Could not listen on 9697");
         }
     }
 
-    return listeners;
+    return (listeners, listen_handles);
 }
 
 fn run(listeners: Vec<JoinHandle<()>>) {
@@ -86,23 +87,23 @@ fn main() {
     let mut fwd = core::Forwarder::new(&fcs, &mut fpit, ffib);
 
     // Create the send/receive channel
-    let (itx, irx): (Sender<(core::packet::message::Message, u16)>, Receiver<(core::packet::message::Message, u16)>) = mpsc::channel();
-    let (otx, orx): (Sender<(core::packet::message::Message, u16)>, Receiver<(core::packet::message::Message, u16)>) = mpsc::channel();
+    let (itx, irx): (Sender<(core::packet::message::Message, u16)>, Receiver<(core::packet::message::Message, u16)>) = mpsc::channel(); // for receiving messages
+    let (otx, orx): (Sender<(core::packet::message::Message, u16)>, Receiver<(core::packet::message::Message, u16)>) = mpsc::channel(); // for sending messages
     let (ctrl_tx, ctrl_rx): (Sender<String>, Receiver<String>) = mpsc::channel();
 
-    // let link_table = core::link::LinkTable::new(orx);
+    let (listeners, handlers) = setup_listeners(ctrl_tx, itx.clone());
+
+    let link_table = core::link::LinkTable::new();
+    let link_manager = core::link::LinkManager::new(itx, orx, link_table, listeners);
 
     // TODO: need to put the output receiver queue in the link table, tie the listeners up to the link table, and then implement the logic in the link table to send information to the links
 
     // Create the processor to handle the link <-> core message passing
     // Move the receiver into the processor
-    let mut processor = core::processor::Processor::new(fwd, irx, otx, ctrl_rx);
-
-    // TODO: maybe run should accept these listeners? Listeners: on new connection, create link and tell processor about the new ID and Link (for the link table)
-    let listeners = setup_listeners(ctrl_tx, itx);
+    let mut processor = core::processor::Processor::new(fwd, irx, otx, ctrl_rx, link_manager);
     processor.run();
 
-    run(listeners);
+    run(handlers);
 }
 
 

@@ -4,6 +4,8 @@ use std::sync::mpsc;
 use core;
 use core::packet;
 use core::link::Link;
+use core::link::LinkType as LinkType;
+use core::link::LinkManager as LinkManager;
 use core::Forwarder as Forwarder;
 use core::ForwarderResult as ForwarderResult;
 use core::packet::message::Message as Message;
@@ -16,16 +18,18 @@ pub struct Processor<'a> {
     fwd: Forwarder<'a>,
     input_queue: Receiver<(Message, u16)>,
     control_channel: Receiver<String>,
-    output_queue: Sender<(Message, u16)>
+    output_queue: Sender<(Message, u16)>,
+    link_manager: LinkManager
 }
 
 impl<'a> Processor<'a> {
-    pub fn new(fwdRef: Forwarder<'a>, input_channel: Receiver<(Message, u16)>, output_channel: Sender<(Message, u16)>, control: Receiver<String>) -> Processor {
+    pub fn new(fwdRef: Forwarder<'a>, input_channel: Receiver<(Message, u16)>, output_channel: Sender<(Message, u16)>, control: Receiver<String>, link_manager: LinkManager) -> Processor {
         Processor {
             fwd: fwdRef,
             input_queue: input_channel,
             control_channel: control,
-            output_queue: output_channel
+            output_queue: output_channel,
+            link_manager: link_manager
         }
     }
 
@@ -60,8 +64,36 @@ impl<'a> Processor<'a> {
         }
     }
 
+    // mk link <name> <protocol> <host:port>
+    // mk route <name> <lci route> [cost]
     fn process_control(&mut self, msg: String) {
-        println!("Handle this control message!");
+        let mut params: Vec<&str> = msg.trim().split(" ").collect();
+
+        let mut cmd = params[0];
+        if cmd == "mk" {
+            let mut target = params[1];
+            if target == "link" {
+                let mut nick = params[2];
+                let mut protocol = params[3];
+                let mut hostport = params[4];
+
+                println!("{} {}", protocol, hostport);
+                if protocol == "udp" {
+                    // self.link_manager.add_link()
+                } else {
+                    println!("Adding the link");
+                    self.link_manager.add_link(nick.to_owned(), LinkType::TCP, hostport.to_owned());
+                }
+            } else if target == "route" {
+                let mut name = params[2];
+                let mut route = params[3];
+                let mut cost = params[4];
+
+
+            } else if target == "listener" {
+                // TODO
+            }
+        }
     }
 
     // TODO: extract the send functions to separate functions
@@ -70,7 +102,8 @@ impl<'a> Processor<'a> {
         match self.fwd.process_interest(msg, incomingFace) {
             Ok((ForwarderResult::CacheHit, msg, id)) => { // content, return it
                 // forward the message to the ID
-                let result = self.output_queue.send((msg, id));
+                let inner_msg = msg.unwrap();
+                let result = self.output_queue.send((inner_msg, id));
                 match result {
                     Ok(m) => {
                         println!("Sent content object back to the link.");
@@ -85,7 +118,8 @@ impl<'a> Processor<'a> {
             },
             Ok ((ForwarderResult::ForwardInterest, msg, id)) => { // interest, forward it
                 // forward the message to the ID
-                let result = self.output_queue.send((msg, id));
+                let inner_msg = msg.unwrap();
+                let result = self.output_queue.send((inner_msg, id));
                 match result {
                     Ok(m) => {
                         println!("Sent content object back to the link.");

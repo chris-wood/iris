@@ -23,6 +23,11 @@ use core::link::tcp_link::TCPLink as TCPLink;
 
 use std::collections::HashMap;
 
+pub enum LinkType {
+    UDP,
+    TCP
+}
+
 pub struct LinkTable {
     links: HashMap<u16, Box<Link>> // http://doc.rust-lang.org/1.4.0/std/collections/struct.HashMap.html
 }
@@ -44,12 +49,59 @@ impl LinkTable {
         // }
         return self.links.get(&id).unwrap();
     }
+
+    pub fn get_new_id(&self) -> u16 {
+        return self.links.len() as u16;
+    }
 }
 
 pub trait Link {
     fn run(&mut self); // TODO: maybe rename run() to receive_from()?
     fn stop(&mut self);
     fn send_to(&mut self, wire_format: &[u8]) -> usize;
+}
+
+pub struct LinkManager {
+    listeners: Vec<Box<LinkListener>>,
+    table: LinkTable,
+    channel: Sender<(core::packet::message::Message, u16)>,
+    receiver: Receiver<(core::packet::message::Message, u16)>
+}
+
+impl LinkManager {
+    pub fn new(sender: Sender<(core::packet::message::Message, u16)>, receiver: Receiver<(core::packet::message::Message, u16)>, mut table: LinkTable, listeners: Vec<Box<LinkListener>>) -> LinkManager {
+        LinkManager {
+            listeners: listeners,
+            table: table,
+            channel: sender,
+            receiver: receiver
+        }
+    }
+
+    pub fn add_link(&mut self, nick: String, link_type: LinkType, addr_string: String) -> bool {
+        let id = self.table.get_new_id();
+
+        // TODO: need to map the link to this ID, and need to map this id to the Link that's created...
+
+        match link_type {
+            LinkType::UDP => {
+                // TODO: implement me!
+                return false;
+            }, LinkType::TCP => {
+                let stream = TcpStream::connect(&addr_string[..]).unwrap();
+                let channel_clone = self.channel.clone();
+
+                // let (tx, rx): (Sender<core::packet::message::Message>, Receiver<core::packet::message::Message>) = mpsc::channel(); // for sending messages
+
+                thread::spawn(move || {
+                    print!("start the TCP link from the LinkManager!");
+                    let mut link = TCPLink::new(id, stream, None, channel_clone);
+                    link.run();
+                });
+            }
+        }
+        return false;
+    }
 }
 
 pub enum LinkListenerError {
@@ -179,7 +231,7 @@ impl LinkListener for TCPLinkListener {
                                 let channel_clone = channel.clone();
                                 thread::spawn(move || {
                                     print!("start the link!");
-                                    let mut link = TCPLink::new(0, stream, addr, channel_clone);
+                                    let mut link = TCPLink::new(0, stream, Some(addr), channel_clone);
                                     link.run();
                                 });
                             }
