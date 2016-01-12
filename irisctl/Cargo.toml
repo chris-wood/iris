@@ -1,0 +1,7 @@
+[package]
+name = "irisctl"
+version = "0.1.0"
+authors = ["Christopher Wood <christopherwood07@gmail.com>"]
+
+[dependencies]
+mio = { git = "https://github.com/carllerche/mio" }
