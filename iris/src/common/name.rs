@@ -1,54 +1,175 @@
+use std::fmt;
 use std::vec::Vec as Vec;
 use std::string::String as String;
 
 #[derive(Debug)]
 pub struct Name {
-    components: Vec<String>
+    // components: Vec<String>
+    name_bytes: Vec<u8>,
+    name_segment_offsets: Vec<(usize, usize)>
+}
+
+impl fmt::Display for Name {
+    // This trait requires `fmt` with this exact signature.
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        // Write strictly the first element into the supplied output
+        // stream: `f`. Returns `fmt::Result` which indicates whether the
+        // operation succeeded or failed. Note that `write!` uses syntax which
+        // is very similar to `println!`.
+        let len = self.name_bytes.len();
+        let mut i = 0;
+        while i < len {
+            write!(f, "{}", self.name_bytes[i] as char);
+            i = i + 1;
+        }
+        write!(f, "{}", 0)
+    }
 }
 
 impl Name {
-    pub fn new(components: Vec<String>) -> (Name) {
-        Name {
-            components: components
+    pub fn create_from_bytes(bytes: &Vec<u8>, name_segment_offsets: &Vec<(usize, usize)>) -> Option<Name> {
+        // let mut components = Vec::new();
+        let mut copy_bytes = Vec::new();
+        let mut copy_offsets = Vec::new();
+
+        for b in bytes {
+            copy_bytes.push(*b);
+        }
+        let mut i = 0;
+        while i < name_segment_offsets.len() {
+            let (o, l) = name_segment_offsets[i];
+            copy_offsets.push((o,l));
+            i = i + 1;
+        }
+
+        let name = Name {
+            name_bytes: copy_bytes,
+            name_segment_offsets: copy_offsets
+        };
+
+        return Some(name);
+    }
+
+    pub fn create_from_string(string_form: String) -> Option<Name> {
+        let splits: Vec<&str> = string_form.split("/").collect();
+        let length = splits.len();
+        let mut offset = 0;
+        match length {
+            0 => return None,
+            _ => { // ok
+                let mut bytes = Vec::new();
+                let mut offsets = Vec::new();
+
+                let mut index = 0;
+                if splits[0].len() == 0 {
+                    index += 1;
+                }
+                while index < length - 1 {
+                    // println!("{}: {}", splits[index].len(), splits[index]);
+                    offsets.push((offset, splits[index].len()));
+                    for b in splits[index].as_bytes() {
+                        bytes.push(*b);
+                    }
+                    offset += splits[index].len();
+                    index += 1;
+                }
+
+                let suffix = splits[index];
+                if index == (length - 1) && suffix.len() > 0 {
+                    // println!("{}: {}", suffix.len(), suffix);
+                    offsets.push((offset, splits[index].len()));
+                    for b in splits[index].as_bytes() {
+                        bytes.push(*b);
+                    }
+                }
+
+                let name = Name {
+                    name_bytes: bytes,
+                    name_segment_offsets: offsets
+                };
+
+                return Some(name);
+            }
+        };
+        return None;
+
+        // let mut name_vector = Vec::new();
+        // let splits:Vec<&str> = string_form.split('/').collect();
+        // for component in splits {
+        //     name_vector.push(String::from(component));
+        // };
+        //
+        // Name {
+        //     components: name_vector
+        // }
+    }
+
+    pub fn display(&mut self) {
+        let copy_bytes = &self.name_bytes;
+        let self_size: usize = self.number_of_components();
+        let mut i = 0;
+        while i < self_size {
+            print!("/");
+            let (o, l) = self.name_segment_overlay(i);
+            let mut index = 0;
+            while index < l {
+                print!("{}", copy_bytes[o + index] as char);
+                index = index + 1;
+            }
+
+            i = i + 1;
         }
     }
 
-    pub fn len(&self) -> usize{
-        return self.components.len();
+    pub fn len(&self) -> usize {
+        return self.name_bytes.len();
     }
 
-    pub fn at(&self, index: usize) -> String {
-        return self.components[index].clone();
+    pub fn number_of_components(&self) -> usize {
+        return self.name_segment_offsets.len();
+    }
+
+    pub fn name_segment_overlay(&self, index: usize) -> (usize, usize) {
+        return self.name_segment_offsets[index];
+    }
+
+    pub fn at(&self, index: usize) -> u8 {
+        return self.name_bytes[index];
     }
 
     pub fn clone(&self) -> Name {
-        let mut components:Vec<String> = Vec::new();
-        let mut index: usize = 0;
-        let self_size: usize = self.len();
-        while index < self_size {
-            components.push(self.at(index));
-            index = index + 1;
-        };
-
-        let name = Name {
-            components: components
-        };
-        return name;
+        return Name::create_from_bytes(&self.name_bytes, &self.name_segment_offsets).unwrap();
     }
 
     pub fn is_prefix_of(&self, target: &Name) -> (bool) {
-        let self_size: usize = self.len();
-        let target_size: usize = target.len();
+        let self_size: usize = self.number_of_components();
+        let target_size: usize = target.number_of_components();
 
-        if target_size > self_size {
-            return false; // impossible
+        println!("{} {}", self, target);
+
+        if self_size > target_size {
+            return false; // impossible for self to be a prefix
         }
 
         let mut index: usize = 0;
         while index < self_size {
-            if self.at(index) != target.at(index) {
+            let (offsetA, lengthA) = self.name_segment_offsets[index];
+            let (offsetB, lengthB) = target.name_segment_overlay(index);
+
+            println!("{}:{}    {}:{}", offsetA, lengthA, offsetB, lengthB);
+
+            if lengthA != lengthB {
                 return false;
+            } else {
+                let mut i = 0;
+                while i < lengthA {
+                    if self.at(offsetA + i) != target.at(offsetB + i) {
+                        return false;
+                    }
+                    i = i + 1;
+                }
             }
+
             index = index + 1;
         }
 
@@ -56,8 +177,8 @@ impl Name {
     }
 
     pub fn equals(&self, target: &Name) -> (bool) {
-        let self_size: usize = self.len();
-        let target_size: usize = target.len();
+        let self_size: usize = self.number_of_components();
+        let target_size: usize = target.number_of_components();
 
         if self.is_prefix_of(target) && self_size == target_size {
             return true;
@@ -65,4 +186,31 @@ impl Name {
             return false;
         }
     }
+}
+
+#[test]
+fn test_name_create_from_bytes() {
+    assert!(true);
+}
+
+#[test]
+fn test_name_create_from_string() {
+    let mut n1 = Name::create_from_string("/hello".to_owned()).unwrap();
+    print!("1: ");
+    n1.display();
+    println!("");
+
+    let mut n2 = Name::create_from_string("/hello/".to_owned()).unwrap();
+    print!("2: ");
+    n2.display();
+    println!("");
+
+    let mut n3 = Name::create_from_string("hello/".to_owned()).unwrap();
+    print!("3: ");
+    n3.display();
+    println!("");
+
+    assert!(n1.equals(&n2));
+    assert!(n1.equals(&n3));
+    assert!(n2.equals(&n3));
 }
