@@ -65,7 +65,6 @@ impl Name {
                     index += 1;
                 }
                 while index < length - 1 {
-                    // println!("{}: {}", splits[index].len(), splits[index]);
                     offsets.push((offset, splits[index].len()));
                     for b in splits[index].as_bytes() {
                         bytes.push(*b);
@@ -76,7 +75,6 @@ impl Name {
 
                 let suffix = splits[index];
                 if index == (length - 1) && suffix.len() > 0 {
-                    // println!("{}: {}", suffix.len(), suffix);
                     offsets.push((offset, splits[index].len()));
                     for b in splits[index].as_bytes() {
                         bytes.push(*b);
@@ -92,16 +90,6 @@ impl Name {
             }
         };
         return None;
-
-        // let mut name_vector = Vec::new();
-        // let splits:Vec<&str> = string_form.split('/').collect();
-        // for component in splits {
-        //     name_vector.push(String::from(component));
-        // };
-        //
-        // Name {
-        //     components: name_vector
-        // }
     }
 
     pub fn display(&mut self) {
@@ -190,6 +178,7 @@ impl Name {
 
 #[test]
 fn test_name_create_from_bytes() {
+    // TODO: create an interest with ccn-lite and then use that output to test here
     assert!(true);
 }
 
@@ -214,3 +203,13 @@ fn test_name_create_from_string() {
     assert!(n1.equals(&n3));
     assert!(n2.equals(&n3));
 }
+
+#[test]
+fn test_name_len() {
+    let n1 = Name::create_from_string("/hello".to_owned()).unwrap();
+    assert!(n1.len() == 5);
+
+    let n2 = Name::create_from_string("/hello/world/man".to_owned()).unwrap();
+    assert!(n2.len() == 13);
+}
+
