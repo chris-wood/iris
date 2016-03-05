@@ -14,7 +14,9 @@ pub fn decode_packet_intro(slice: &[u8], mut offset: usize) -> (message::Message
 
     // Debug header info
     println!("TLV = {} {} {}", version, msg_type, plength);
-    println!("      {}", rsvd);
+    println!("      {} {}", rsvd, offset);
+
+    assert!(slice.len() == (offset + plength as usize));
 
     let mut byteVector = Vec::new();
     for b in slice {
@@ -25,7 +27,12 @@ pub fn decode_packet_intro(slice: &[u8], mut offset: usize) -> (message::Message
         message_bytes: byteVector,
         packet_type: message::PacketType::Interest,
         name_offset: 0,
+        name_segment_offsets: Vec::new(),
         name_length: 0,
+        key_id_offset: 0,
+        key_id_length: 0,
+        content_id_offset: 0,
+        content_id_length: 0,
         payload_offset: 0,
         payload_length: 0,
         validation_offset: 0,
@@ -67,13 +74,13 @@ fn decode_tlv_message(msg: &mut message::Message, slice: &[u8], plength: u16, mu
     let mut next_type: u16 = decode_tlv_parse_two(slice, offset); offset += 2;
     let mut next_length: u16 = decode_tlv_parse_two(slice, offset); offset += 2;
     msg.name_length = next_length as usize;
-    println!("TL = {} {}", next_type, next_length);
+    println!("TL = {} {} {}", next_type, next_length, offset);
     if next_type == 0 {
         offset = decode_tlv_name_value(msg, slice, next_length, offset);
     }
 
     // Check to see if we've reached the end of the packet
-    if ((start_offset +(plength as usize)) == offset) {
+    if ((start_offset + (plength as usize)) == offset) {
         println!("Done parsing the packet");
         return offset;
     }
@@ -95,7 +102,7 @@ fn decode_tlv_toplevel(msg: &mut message::Message, slice: &[u8], plength: u16, m
     while offset < (plength as usize) {
         let top_type: u16 = decode_tlv_parse_two(slice, offset); offset += 2;
         let top_length: u16 = decode_tlv_parse_two(slice, offset); offset += 2;
-        println!("top level TL = {} {}", top_type, top_length);
+        println!("top level TL = {} {} {}", top_type, top_length, offset);
 
         if top_type == (message::TopLevelType::Interest as u16) {
             println!("interest");
@@ -120,13 +127,16 @@ fn decode_tlv_toplevel(msg: &mut message::Message, slice: &[u8], plength: u16, m
 fn decode_tlv_name_value(msg: &mut message::Message, slice: &[u8], plength: u16,  mut offset: usize) -> (usize) {
     let target: usize = (plength as usize) + offset;
     while offset < target {
-        println!("Reading next TLV for the name...");
+        println!("Reading component at offset {}", offset);
         let name_segment_type: u16 = decode_tlv_parse_two(slice, offset); offset += 2;
         let name_segment_length: u16 = decode_tlv_parse_two(slice, offset); offset += 2;
         let name_segment_value: &[u8] = &slice[offset .. (offset + name_segment_length as usize)];
+
+        print!("NAME TLV {} {} {} ", name_segment_type, offset, name_segment_length);
+
+        msg.name_segment_offsets.push((offset, name_segment_length as usize));
         offset += name_segment_length as usize;
 
-        print!("NAME TLV {} {} ", name_segment_type, name_segment_length);
         for b in name_segment_value {
             print!("{:X} ", b);
         }
