@@ -11,3 +11,6 @@ git = "https://github.com/BurntSushi/byteorder.git"
 
 [dependencies]
 mio = { git = "https://github.com/carllerche/mio" }
+
+[dependencies]
+bytes = "0.3.0"

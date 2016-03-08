@@ -1,5 +1,6 @@
 use std::vec;
 use common::name::Name as Name;
+use core::packet::message::Message as Message;
 
 #[derive(Debug)]
 pub struct CacheEntry {
@@ -29,6 +30,19 @@ fn compare_vectors(x: &Vec<u8>, y: &Vec<u8>) -> (bool) {
     return false;
 }
 
+#[test]
+fn test_compare_vectors() {
+    let mut vec1: Vec<u8> = Vec::new();
+    let mut vec2: Vec<u8> = Vec::new();
+
+    for x in 0..128 {
+        vec1.push(x);
+        vec2.push(x);
+    }
+
+    assert!(compare_vectors(&vec1, &vec2));
+}
+
 impl Cache {
     pub fn new(new_size: usize) -> Cache {
         Cache {
@@ -38,22 +52,27 @@ impl Cache {
     }
 
     pub fn dump_contents(&self) {
-    print!("dump_contents() start.");
+        println!("dump_contents() start.");
         for entry in self.entries.iter() {
             println!("entry {:?}", entry);
         }
-        print!("dump_contents() done.");
+        println!("dump_contents() done.");
     }
 
-    pub fn lookup(&self, target: &Name, key_id_restr: &Vec<u8>, hash_restr: &Vec<u8>) -> Option<&CacheEntry> {
+    // pub fn lookup(&self, target: &Name, key_id_restr: &Vec<u8>, hash_restr: &Vec<u8>) -> Option<&CacheEntry> {
+    pub fn lookup(&self, target: &Message) -> Option<&CacheEntry> {
+        // for entry in self.entries.iter() {
+        //     if entry.name.equals(&target) {
+        //         if compare_vectors(&entry.keyIdRestriction, key_id_restr) {
+        //             if compare_vectors(&entry.hashRestriction, hash_restr) {
+        //                 return Some(entry);
+        //             }
+        //         }
+        //     }
+        // }
+
         for entry in self.entries.iter() {
-            if entry.name.equals(&target) {
-                if compare_vectors(&entry.keyIdRestriction, key_id_restr) {
-                    if compare_vectors(&entry.hashRestriction, hash_restr) {
-                        return Some(entry);
-                    }
-                }
-            }
+            
         }
 
         return None;
@@ -63,21 +82,43 @@ impl Cache {
         return true;
     }
 
-    pub fn insert(&mut self, target: &Name, key_id_restr: &Vec<u8>, hash_restr: &Vec<u8>, data: &Vec<u8>) -> (bool) {
-        let length = key_id_restr.len() + hash_restr.len() + data.len();
-        if length >= self.size {
-            self.evict(length);
-        }
-
-        let new_name = target.clone();
-        let mut entry = CacheEntry {
-            name: new_name,
-            keyIdRestriction: key_id_restr.clone(),
-            hashRestriction: hash_restr.clone(),
-            data: data.clone()
-        };
-        self.entries.push(entry);
+    // pub fn insert(&mut self, target: &Name, key_id_restr: &Vec<u8>, hash_restr: &Vec<u8>, data: &Vec<u8>) -> (bool) {
+    pub fn insert(&mut self, target: &Message) -> (bool) {
+        // let length = key_id_restr.len() + hash_restr.len() + data.len();
+        // if length >= self.size {
+        //     self.evict(length);
+        // }
+        //
+        // let new_name = target.clone();
+        // let mut entry = CacheEntry {
+        //     name: new_name,
+        //     keyIdRestriction: key_id_restr.clone(),
+        //     hashRestriction: hash_restr.clone(),
+        //     data: data.clone()
+        // };
+        // self.entries.push(entry);
 
         return true;
     }
 }
+
+#[test]
+fn test_cache_new() {
+    
+}
+
+#[test]
+fn test_cache_lookup() {
+
+}
+
+#[test]
+fn test_cache_evict() {
+
+}
+
+#[test]
+fn test_cache_insert() {
+
+}
+

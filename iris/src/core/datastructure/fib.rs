@@ -1,12 +1,18 @@
 use std::vec;
 use common::name::Name as Name;
 use core::link::Link as Link;
+use core::packet::message::Message as Message;
 
 pub struct FIBEntry {
     name: Name,
-    // faces: Vec<Box<Link>>
-    pub faces: Vec<u16>
+    pub faces: Vec<usize>
 }
+
+// impl FIBEntry {
+//     fn display(&self) {
+//         // self.name.display();
+//     }
+// }
 
 pub struct FIB {
     entries: Vec<FIBEntry>
@@ -19,18 +25,24 @@ impl FIB {
         }
     }
 
-    pub fn lookup(&self, target: &Name) -> Option<&FIBEntry> {
+    // pub fn lookup(&self, target: &Name) -> Option<&FIBEntry> {
+    pub fn lookup(&self, target: &Message) -> Option<&FIBEntry> {
+        let mut name = target.get_name();
+        println!("Lookup {}", name);
         for entry in self.entries.iter() {
-            if entry.name.equals(&target) {
+            println!("Against {}", entry.name);
+            if entry.name.is_prefix_of(&name) {
                 return Some(entry);
             }
         }
         return None;
     }
 
-    pub fn insert(&mut self, target: Name, newFace: u16) -> (bool) {
+    pub fn insert(&mut self, target: &Name, newFace: usize) -> (bool) {
+        println!("ADDING NEW ENTRY WITH FACE ID {}", newFace);
+
         for entry in self.entries.iter_mut() {
-            if entry.name.equals(&target) {
+            if entry.name.equals(target) {
                 entry.faces.push(newFace);
                 return true;
             }
@@ -46,4 +58,10 @@ impl FIB {
 
         return true;
     }
+}
+
+#[test]
+fn test_fib_lookup() {
+    let mut fib = FIB::new();
+    // let n1 = name::create_from_string("/hello/world");
 }

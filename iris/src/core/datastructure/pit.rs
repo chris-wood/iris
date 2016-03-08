@@ -1,15 +1,20 @@
 use std::vec;
-// use std::io::Timer;
-// use std::time::Duration;
+
+use std::env;
+use std::error::Error;
+use std::io::prelude::*;
+use std::fs::File;
+use std::path::Path;
+
 use common::name::Name as Name;
-use core::link::Link as Link;
+use core::packet::message::Message as Message;
+use core::packet as Packet;
 
 pub struct PITEntry {
     name: Name,
     keyIdRestriction: Vec<u8>,
     hashRestriction: Vec<u8>,
-    // arrivalFaces: Vec<Box<Link>>,
-    arrivalFaces: Vec<u16>, // make this mutable for its lifetime
+    arrival_faces: Vec<usize>, // make this mutable for its lifetime
     lifetime: u32, // number of epochs
 }
 
@@ -38,48 +43,117 @@ impl PIT {
         }
     }
 
-    // TODO: make keyId and hashRest Optional
-
-    pub fn lookup(&self, target: &Name, key_id_restr: &Vec<u8>, hash_restr: &Vec<u8>) -> Option<&PITEntry> {
+    pub fn lookup(&self, target: &Message) -> Option<&PITEntry> {
         for entry in self.entries.iter() {
-            if entry.name.equals(&target) {
-                if compare_vectors(&entry.keyIdRestriction, key_id_restr) {
-                    if compare_vectors(&entry.hashRestriction, hash_restr) {
-                        return Some(entry);
-                    }
-                }
+            let target_name = target.get_name();
+            if entry.name.equals(&target_name) {
+                // TODO: need to add missing checks for the key_id and content_id
+                return Some(entry);
             }
         }
 
         return None;
     }
 
-    // Can only be called by the owner! Oof!
-    pub fn insert(&mut self, target: &Name, key_id_restr: &Vec<u8>, hash_restr: &Vec<u8>, newFace: u16) -> (bool) {
-
-        // TODO: replace this with a call to lookup, fixing the borrowed lifetime issue
-
+    fn lookup_mut(&mut self, target: &Message) -> Option<(&mut PITEntry, usize)> {
+        let mut index: usize = 0;
         for entry in self.entries.iter_mut() {
-            if entry.name.equals(&target) {
-                if compare_vectors(&entry.keyIdRestriction, key_id_restr) {
-                    if compare_vectors(&entry.hashRestriction, hash_restr) {
-                        entry.arrivalFaces.push(newFace);
-                        return true;
-                    }
-                }
+            let target_name = target.get_name();
+            if entry.name.equals(&target_name) {
+                // TODO: need to add missing checks for the key_id and content_id
+                return Some((entry, index));
+            }
+            index = index + 1;
+        }
+
+        return None;
+    }
+
+    // Can only be called by the owner! Oof!
+    // pub fn insert(&mut self, target: &Name, key_id_restr: &Vec<u8>, hash_restr: &Vec<u8>, new_face: usize) -> (bool) {
+    pub fn insert(&mut self, target: &Message, new_face: usize) -> (bool) {
+        let mut new_entry: Option<PITEntry> = None;
+        match self.lookup_mut(target) {
+            Some((entry, index)) => {
+                entry.arrival_faces.push(new_face);
+                return true;
+            },
+            None => {
+                let clone = target.clone();
+                let entry = PITEntry {
+                    name: clone.get_name(),
+                    keyIdRestriction: vec![],
+                    hashRestriction: vec![],
+                    arrival_faces: vec![new_face],
+                    lifetime: 10 
+                };
+                new_entry = Some(entry);
             }
         }
 
-        let new_name = target.clone();
-        let entry = PITEntry {
-            name: new_name,
-            keyIdRestriction: key_id_restr.clone(),
-            hashRestriction: hash_restr.clone(),
-            arrivalFaces: vec![newFace],
-            lifetime: 10 // TODO: completely arbitrary... make this a parameter
-        };
-        self.entries.push(entry);
+        match new_entry {
+            Some(entry) => {
+                self.entries.push(entry);
+                return true;
+            },
+            None => { }
+        }
+        return false;
+    }
 
+    pub fn flush(&mut self, target: &Message) -> (bool) {
+        let mut target_index = 0;
+        match self.lookup_mut(target) {
+            Some((entry, index)) => {
+                target_index = index;
+            },
+            None => {
+                return false;
+            }
+        }
+
+        self.entries.swap_remove(target_index);
         return true;
     }
 }
+
+
+#[test]
+fn test_pit_insert() {
+    let path = Path::new("../data/packet1_interest.bin");
+    let display = path.display();
+
+    let mut file = match File::open(&path) {
+        Err(why) => panic!("couldn't open {}: {}", display, Error::description(&why)),
+        Ok(file) => file,
+    };
+
+    let mut file_contents = Vec::new();
+    match file.read_to_end(&mut file_contents) {
+        Err(why) => panic!("couldn't read {}: {}", display, Error::description(&why)),
+        Ok(_) => {}
+    }
+    let buffer = &file_contents[..]; // take reference to the entire thing (i.e., a slice)nt flags = fcntl(fwd_state->fd, F_GETFL, NULL);
+
+    // 0. Create the PIT
+    let mut pit = PIT::new();
+
+    // 1. decode the packet
+    let msg = Packet::decode_packet(buffer);
+
+    // 2. insert the interest
+    let mut face = 5;
+    let mut result = pit.insert(&msg, face);
+    assert!(result == true);
+
+    // 3. try to insert yet another interest from a different face
+    face = 10;
+    result = pit.insert(&msg, face);
+    assert!(result == true);
+}
+
+#[test]
+fn test_pit_lookup() {
+
+}
+

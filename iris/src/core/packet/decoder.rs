@@ -6,6 +6,7 @@ pub fn decode_packet_intro(slice: &[u8], mut offset: usize) -> (message::Message
     // Decode the fixed header
     let version: u8 = decode_tlv_parse_one(slice, offset); offset += 1;
     let msg_type: u8 = decode_tlv_parse_one(slice, offset); offset += 1;
+    println!("{} {}", slice[offset], slice[offset + 1]);
     let mut plength: u16 = decode_tlv_parse_two(slice, offset); offset += 2;
     plength = plength - 8; // packet length includes the fixed header
     let rsvd: u16 = decode_tlv_parse_two(slice, offset); offset += 2;
@@ -15,6 +16,7 @@ pub fn decode_packet_intro(slice: &[u8], mut offset: usize) -> (message::Message
     // Debug header info
     println!("TLV = {} {} {}", version, msg_type, plength);
     println!("      {} {}", rsvd, offset);
+    println!("actual length = {}", slice.len());
 
     assert!(slice.len() == (offset + plength as usize));
 

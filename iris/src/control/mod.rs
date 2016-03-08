@@ -191,10 +191,3 @@ fn command_get(params: Vec<String>) -> (bool) {
 fn command_set(params: Vec<String>) -> (bool) {
     return false;
 }
-
-// API and commands to support
-// - mk key
-// - mk dev PARAMS // local and remove device, e.g., eth0, tcp0, udp0, etc.
-// - mk service SERVICEID // protocol version
-// - mk link LOCAL-DEVICE REMOTE-DEVICE
-// - mk pipe LOCAL-SERVICE REMOTE-SERVICE
