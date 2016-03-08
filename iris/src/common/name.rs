@@ -144,8 +144,6 @@ impl Name {
             let (offsetA, lengthA) = self.name_segment_offsets[index];
             let (offsetB, lengthB) = target.name_segment_overlay(index);
 
-            println!("{}:{}    {}:{}", offsetA, lengthA, offsetB, lengthB);
-
             if lengthA != lengthB {
                 return false;
             } else {
@@ -213,3 +211,31 @@ fn test_name_len() {
     assert!(n2.len() == 13);
 }
 
+#[test]
+fn test_name_number_of_components() {
+    let n1 = Name::create_from_string("/hello".to_owned()).unwrap();
+    assert!(n1.number_of_components() == 1);
+
+    let n2 = Name::create_from_string("/hello/world/man".to_owned()).unwrap();
+    assert!(n2.number_of_components() == 3);
+}
+
+
+#[test]
+fn test_name_number_segment_overlay() {
+    let n1 = Name::create_from_string("/hello".to_owned()).unwrap();
+    let (o1, s1) = n1.name_segment_overlay(0);
+    assert!(o1 == 0);
+    assert!(s1 == 5);
+}
+
+#[test]
+fn test_name_is_prefix_of() {
+    let n1 = Name::create_from_string("/hello".to_owned()).unwrap();
+    let n2 = Name::create_from_string("/hello/world".to_owned()).unwrap();
+    let n3 = Name::create_from_string("/goodbye".to_owned()).unwrap();
+
+    assert!(n1.is_prefix_of(&n2));
+    assert!(!n3.is_prefix_of(&n2));
+    assert!(n2.is_prefix_of(&n2));
+}
