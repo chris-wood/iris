@@ -133,8 +133,6 @@ impl Name {
         let self_size: usize = self.number_of_components();
         let target_size: usize = target.number_of_components();
 
-        println!("{} {}", self, target);
-
         if self_size > target_size {
             return false; // impossible for self to be a prefix
         }
@@ -148,12 +146,15 @@ impl Name {
                 return false;
             } else {
                 let mut i = 0;
+                println!("Starting component check");
                 while i < lengthA {
+                    print!("{} {}", self.at(offsetA + i), target.at(offsetB + i));
                     if self.at(offsetA + i) != target.at(offsetB + i) {
                         return false;
                     }
                     i = i + 1;
                 }
+                println!("\nEnding component check");
             }
 
             index = index + 1;

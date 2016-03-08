@@ -154,6 +154,57 @@ fn test_pit_insert() {
 
 #[test]
 fn test_pit_lookup() {
+    let path = Path::new("../data/packet1_interest.bin");
+    let display = path.display();
 
+    let mut file = match File::open(&path) {
+        Err(why) => panic!("couldn't open {}: {}", display, Error::description(&why)),
+        Ok(file) => file,
+    };
+
+    let mut file_contents = Vec::new();
+    match file.read_to_end(&mut file_contents) {
+        Err(why) => panic!("couldn't read {}: {}", display, Error::description(&why)),
+        Ok(_) => {}
+    }
+    let buffer = &file_contents[..]; // take reference to the entire thing (i.e., a slice)nt flags = fcntl(fwd_state->fd, F_GETFL, NULL);
+
+    // 0. Create the PIT
+    let mut pit = PIT::new();
+
+    // 1. decode the packet
+    let msg = Packet::decode_packet(buffer);
+
+    // 2. insert the interest
+    let mut face = 5;
+    let mut result = pit.insert(&msg, face);
+    assert!(result == true);
+
+    let data_path = Path::new("../data/packet1_interest.bin");
+    let data_display = path.display();
+
+    let mut data_file = match File::open(&data_path) {
+        Err(why) => panic!("couldn't open {}: {}", data_display, Error::description(&why)),
+        Ok(file) => file,
+    };
+
+    let mut data_file_contents = Vec::new();
+    match data_file.read_to_end(&mut data_file_contents) {
+        Err(why) => panic!("couldn't read {}: {}", data_display, Error::description(&why)),
+        Ok(_) => {}
+    }
+    let data_buffer = &data_file_contents[..]; // take reference to the entire thing (i.e., a slice)nt flags = fcntl(fwd_state->fd, F_GETFL, NULL);
+
+    // 3. decode the content object
+    let content = Packet::decode_packet(data_buffer);
+
+    // 4. lookup the conten object
+    let result = pit.lookup(&content);
+    match result {
+        Some(entry) => {
+            println!("Matched correctly!"); 
+        },
+        None => assert!(false)
+    };
 }
 
