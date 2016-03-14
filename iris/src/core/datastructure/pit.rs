@@ -133,7 +133,7 @@ fn test_pit_insert() {
         Err(why) => panic!("couldn't read {}: {}", display, Error::description(&why)),
         Ok(_) => {}
     }
-    let buffer = &file_contents[..]; // take reference to the entire thing (i.e., a slice)nt flags = fcntl(fwd_state->fd, F_GETFL, NULL);
+    let buffer = &file_contents[..]; 
 
     // 0. Create the PIT
     let mut pit = PIT::new();
@@ -167,7 +167,7 @@ fn test_pit_lookup() {
         Err(why) => panic!("couldn't read {}: {}", display, Error::description(&why)),
         Ok(_) => {}
     }
-    let buffer = &file_contents[..]; // take reference to the entire thing (i.e., a slice)nt flags = fcntl(fwd_state->fd, F_GETFL, NULL);
+    let buffer = &file_contents[..]; 
 
     // 0. Create the PIT
     let mut pit = PIT::new();
@@ -208,3 +208,42 @@ fn test_pit_lookup() {
     };
 }
 
+#[test]
+fn test_pit_flush() {
+    let path = Path::new("../data/packet1_interest.bin");
+    let display = path.display();
+
+    let mut file = match File::open(&path) {
+        Err(why) => panic!("couldn't open {}: {}", display, Error::description(&why)),
+        Ok(file) => file,
+    };
+
+    let mut file_contents = Vec::new();
+    match file.read_to_end(&mut file_contents) {
+        Err(why) => panic!("couldn't read {}: {}", display, Error::description(&why)),
+        Ok(_) => {}
+    }
+    let buffer = &file_contents[..]; 
+
+    let mut pit = PIT::new();
+
+    let msg = Packet::decode_packet(buffer);
+
+    // Test flush first
+    let pre_insert_result = pit.flush(&msg);
+    assert!(pre_insert_result == false);
+
+    // Acquire the pre-insert count
+    let expected_count = pit.entries.len();
+
+    let mut face = 5;
+    let mut result = pit.insert(&msg, face);
+    assert!(result == true);
+
+    // Test post-insert flush
+    let post_insert_result = pit.flush(&msg);
+    assert!(post_insert_result == true);
+
+    let actual_count = pit.entries.len();
+    assert!(expected_count == actual_count);
+}

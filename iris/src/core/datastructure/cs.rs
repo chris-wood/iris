@@ -104,7 +104,8 @@ impl Cache {
 
 #[test]
 fn test_cache_new() {
-    
+    let cs = Cache::new(1);
+
 }
 
 #[test]
