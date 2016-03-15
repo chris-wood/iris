@@ -109,6 +109,10 @@ impl Message {
         return self.message_bytes.clone()
     }
 
+    pub fn byte_at(&self, index: usize) -> u8 {
+        return self.message_bytes[index];
+    }
+
     pub fn size(&self) -> usize {
         return self.message_bytes.len();
     }
