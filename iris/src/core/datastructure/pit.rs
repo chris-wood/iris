@@ -85,7 +85,7 @@ impl PIT {
                     keyIdRestriction: vec![],
                     hashRestriction: vec![],
                     arrival_faces: vec![new_face],
-                    lifetime: 10 
+                    lifetime: 10
                 };
                 new_entry = Some(entry);
             }
@@ -133,7 +133,7 @@ fn test_pit_insert() {
         Err(why) => panic!("couldn't read {}: {}", display, Error::description(&why)),
         Ok(_) => {}
     }
-    let buffer = &file_contents[..]; 
+    let buffer = &file_contents[..];
 
     // 0. Create the PIT
     let mut pit = PIT::new();
@@ -167,7 +167,7 @@ fn test_pit_lookup() {
         Err(why) => panic!("couldn't read {}: {}", display, Error::description(&why)),
         Ok(_) => {}
     }
-    let buffer = &file_contents[..]; 
+    let buffer = &file_contents[..];
 
     // 0. Create the PIT
     let mut pit = PIT::new();
@@ -202,7 +202,7 @@ fn test_pit_lookup() {
     let result = pit.lookup(&content);
     match result {
         Some(entry) => {
-            println!("Matched correctly!"); 
+            println!("Matched correctly!");
         },
         None => assert!(false)
     };
@@ -223,7 +223,7 @@ fn test_pit_flush() {
         Err(why) => panic!("couldn't read {}: {}", display, Error::description(&why)),
         Ok(_) => {}
     }
-    let buffer = &file_contents[..]; 
+    let buffer = &file_contents[..];
 
     let mut pit = PIT::new();
 

@@ -1,12 +1,13 @@
 use std::vec;
 use common::name::Name as Name;
+use core::packet as Packet;
 use core::packet::message::Message as Message;
 
 #[derive(Debug)]
 pub struct CacheEntry {
     name: Name,
-    keyIdRestriction: Vec<u8>,
-    hashRestriction: Vec<u8>,
+    key_id_restriction: Vec<u8>,
+    content_id_restriction: Vec<u8>,
     data: Vec<u8>
 }
 
@@ -59,12 +60,11 @@ impl Cache {
         println!("dump_contents() done.");
     }
 
-    // pub fn lookup(&self, target: &Name, key_id_restr: &Vec<u8>, hash_restr: &Vec<u8>) -> Option<&CacheEntry> {
     pub fn lookup(&self, target: &Message) -> Option<&CacheEntry> {
         // for entry in self.entries.iter() {
         //     if entry.name.equals(&target) {
-        //         if compare_vectors(&entry.keyIdRestriction, key_id_restr) {
-        //             if compare_vectors(&entry.hashRestriction, hash_restr) {
+        //         if compare_vectors(&entry.key_id_restriction, key_id_restr) {
+        //             if compare_vectors(&entry.content_id_restriction, hash_restr) {
         //                 return Some(entry);
         //             }
         //         }
@@ -72,7 +72,7 @@ impl Cache {
         // }
 
         for entry in self.entries.iter() {
-            
+
         }
 
         return None;
@@ -82,34 +82,98 @@ impl Cache {
         return true;
     }
 
-    // pub fn insert(&mut self, target: &Name, key_id_restr: &Vec<u8>, hash_restr: &Vec<u8>, data: &Vec<u8>) -> (bool) {
     pub fn insert(&mut self, target: &Message) -> (bool) {
-        // let length = key_id_restr.len() + hash_restr.len() + data.len();
-        // if length >= self.size {
-        //     self.evict(length);
-        // }
-        //
-        // let new_name = target.clone();
-        // let mut entry = CacheEntry {
-        //     name: new_name,
-        //     keyIdRestriction: key_id_restr.clone(),
-        //     hashRestriction: hash_restr.clone(),
-        //     data: data.clone()
-        // };
-        // self.entries.push(entry);
+        let length = target.size();
+        if length >= self.size {
+            self.evict(length);
+        }
+
+        let bytes = target.bytes();
+        let new_name = target.get_name();
+
+        let mut key_id = Vec::new();
+        match target.get_key_id_overlay() {
+            Some ((o, l)) => {
+                let mut index = o;
+                while (index < l) {
+                    key_id.push(bytes[index]);
+                    index = index + 1;
+                }
+            }, None => {}
+        }
+
+        let mut content_id = Vec::new();
+        match target.get_key_id_overlay() {
+            Some ((o, l)) => {
+                let mut index = o;
+                while (index < l) {
+                    content_id.push(bytes[index]);
+                    index = index + 1;
+                }
+            }, None => {}
+        }
+
+        let mut entry = CacheEntry {
+            name: new_name,
+            key_id_restriction: key_id,
+            content_id_restriction: content_id,
+            data: bytes
+        };
+        self.entries.push(entry);
 
         return true;
     }
 }
 
-#[test]
-fn test_cache_new() {
-    let cs = Cache::new(1);
+use std::env;
+use std::error::Error;
+use std::io::prelude::*;
+use std::fs::File;
+use std::path::Path;
 
+#[test]
+fn test_cache_insert() {
+    let path = Path::new("../data/packet1_interest.bin");
+    let display = path.display();
+
+    let mut file = match File::open(&path) {
+        Err(why) => panic!("couldn't open {}: {}", display, Error::description(&why)),
+        Ok(file) => file,
+    };
+
+    let mut file_contents = Vec::new();
+    match file.read_to_end(&mut file_contents) {
+        Err(why) => panic!("couldn't read {}: {}", display, Error::description(&why)),
+        Ok(_) => {}
+    }
+    let buffer = &file_contents[..];
+
+    let msg = Packet::decode_packet(buffer);
+
+    let mut cache = Cache::new(1);
+    let result = cache.insert(&msg);
+    assert!(result);
 }
 
 #[test]
 fn test_cache_lookup() {
+    let cache = Cache::new(1);
+
+    let path = Path::new("../data/packet1_interest.bin");
+    let display = path.display();
+
+    let mut file = match File::open(&path) {
+        Err(why) => panic!("couldn't open {}: {}", display, Error::description(&why)),
+        Ok(file) => file,
+    };
+
+    let mut file_contents = Vec::new();
+    match file.read_to_end(&mut file_contents) {
+        Err(why) => panic!("couldn't read {}: {}", display, Error::description(&why)),
+        Ok(_) => {}
+    }
+    let buffer = &file_contents[..];
+
 
 }
 
@@ -117,9 +181,3 @@ fn test_cache_lookup() {
 fn test_cache_evict() {
 
 }
-
-#[test]
-fn test_cache_insert() {
-
-}
-

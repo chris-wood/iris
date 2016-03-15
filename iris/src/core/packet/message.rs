@@ -105,8 +105,12 @@ impl Message {
         }
     }
 
-    pub fn bytes(self) -> Vec<u8> {
+    pub fn bytes(&self) -> Vec<u8> {
         return self.message_bytes.clone()
+    }
+
+    pub fn size(&self) -> usize {
+        return self.message_bytes.len();
     }
 
     pub fn get_key_id_overlay(&self) -> Option<(usize, usize)> {
@@ -145,54 +149,6 @@ impl Message {
         return Name::create_from_bytes(&name_bytes, &name_segment_offsets).unwrap();
     }
 
-    // pub fn compare_name(&self, other_name: &Name) -> bool {
-    //     if other_name.len() != self.name_length {
-    //         return false;
-    //     }
-    //
-    //     let mut index = 0;
-    //     let mut length = other_name.len();
-    //
-    //     while index < length {
-    //         if other_name.at(index) != self.message_bytes[self.name_offset + index] {
-    //             return false;
-    //         }
-    //         index = index + 1;
-    //     }
-    //
-    //     return true;
-    // }
-
-    // pub fn get_name(&self) -> Name {
-    //     // let name_bytes = &self.message_bytes[self.name_offset .. (self.name_offset + self.name_length)];
-    //     // let mut byte_vector = Vec::new();
-    //     // for b in name_bytes {
-    //     //     byte_vector.push(*b);
-    //     // }
-    //     //
-    //     // let name_string = match String::from_utf8(byte_vector) {
-    //     //     Ok(v) => v,
-    //     //     Err(e) => panic!("Invalid UTF-8 sequence: {}", e),
-    //     // };
-    //
-    //     let mut name_vector = Vec::new();
-    //     for (offset, length) in self.name_segment_offsets {
-    //         let string = str::from_utf8(&self.message_bytes[offset .. (offset + length)]).unwrap();
-    //
-    //         // let mut full_string = String::new();
-    //         // full_string.push_str(string);
-    //
-    //         name_vector.push(full_string);
-    //     }
-    //
-    //     // let splits:Vec<&str> = name_string.split('/').collect();
-    //     // for component in splits {
-    //     //     name_vector.push(String::from(component));
-    //     // }
-    //
-    //     return Name::create_from_components(name_vector);
-    // }
-
     // TODO: isControl, isInterest, isContentObject
 
     pub fn print(self) {
@@ -221,4 +177,3 @@ fn test_get_key_id() {
 fn test_get_content_id() {
 
 }
-
