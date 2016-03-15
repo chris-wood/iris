@@ -148,7 +148,7 @@ impl Name {
                 let mut i = 0;
                 println!("Starting component check");
                 while i < lengthA {
-                    print!("{} {}", self.at(offsetA + i), target.at(offsetB + i));
+                    print!("{} =? {}, ", self.at(offsetA + i), target.at(offsetB + i));
                     if self.at(offsetA + i) != target.at(offsetB + i) {
                         return false;
                     }
