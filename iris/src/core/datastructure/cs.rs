@@ -61,24 +61,77 @@ impl Cache {
     }
 
     pub fn lookup(&self, target: &Message) -> Option<&CacheEntry> {
-        // for entry in self.entries.iter() {
-        //     if entry.name.equals(&target) {
-        //         if compare_vectors(&entry.key_id_restriction, key_id_restr) {
-        //             if compare_vectors(&entry.content_id_restriction, hash_restr) {
-        //                 return Some(entry);
-        //             }
-        //         }
-        //     }
-        // }
+        // Extract the request key parameters
+        let name = target.get_name();
+        let key_id = target.get_key_id_overlay();
+        let content_id = target.get_key_id_overlay();
 
         for entry in self.entries.iter() {
+            let mut is_match = true;
+            if !entry.name.equals(&name) {
+                is_match = false;
+            }
 
+            println!("matched name? {}", is_match);
+
+            // TODO: move to funcion.
+            if is_match {
+                match key_id {
+                    Some ((o, l)) => {
+                        let length = entry.key_id_restriction.len();
+                        if l == length {
+                            let mut index = 0;
+                            while (index < l) {
+                                if (entry.key_id_restriction[index] != target.byte_at(o + index)) {
+                                    is_match = false;
+                                    break;
+                                }
+                                index = index + 1;
+                            }
+                        } else {
+                            is_match = false;
+                        }
+                    }, None => {}
+                }
+            }
+
+            println!("matched key_id? {}", is_match);
+
+            if is_match {
+                match content_id {
+                    Some ((o, l)) => {
+                        let length = entry.content_id_restriction.len();
+                        if l == length {
+                            let mut index = 0;
+                            while (index < l) {
+                                if (entry.content_id_restriction[index] != target.byte_at(o + index)) {
+                                    is_match = false;
+                                    break;
+                                }
+                                index = index + 1;
+                            }
+                        } else {
+                            is_match = false;
+                        }
+                    }, None => {}
+                }
+            }
+
+            println!("matched content_id? {}", is_match);
+
+            if is_match {
+                return Some(entry);
+            }
         }
 
         return None;
     }
 
     fn evict(&mut self, length: usize) -> (bool) {
+        let length = self.entries.len();
+        if (length > 1) {
+            self.entries.swap_remove(0);
+        }
         return true;
     }
 
@@ -120,6 +173,7 @@ impl Cache {
             data: bytes
         };
         self.entries.push(entry);
+        self.size = self.size + length;
 
         return true;
     }
@@ -153,6 +207,8 @@ fn test_cache_insert() {
     let mut cache = Cache::new(1);
     let result = cache.insert(&msg);
     assert!(result);
+
+    // TODO: assert that the size increased by the length of the message and keyId/ContentId
 }
 
 #[test]
@@ -174,10 +230,47 @@ fn test_cache_lookup() {
     }
     let buffer = &file_contents[..];
 
+    let msg = Packet::decode_packet(buffer);
 
+    let mut cache = Cache::new(1);
+    let result = cache.insert(&msg);
+    assert!(result);
+
+    let lookup_result = cache.lookup(&msg);
+    match lookup_result {
+        Some(entry) => {},
+        None => assert!(false)
+    }
 }
 
 #[test]
 fn test_cache_evict() {
+    let cache = Cache::new(1);
 
+    let path = Path::new("../data/packet1_interest.bin");
+    let display = path.display();
+
+    let mut file = match File::open(&path) {
+        Err(why) => panic!("couldn't open {}: {}", display, Error::description(&why)),
+        Ok(file) => file,
+    };
+
+    let mut file_contents = Vec::new();
+    match file.read_to_end(&mut file_contents) {
+        Err(why) => panic!("couldn't read {}: {}", display, Error::description(&why)),
+        Ok(_) => {}
+    }
+    let buffer = &file_contents[..];
+
+    let msg = Packet::decode_packet(buffer);
+
+    let mut cache = Cache::new(1);
+    let result = cache.insert(&msg);
+    assert!(result);
+
+    let evict_result = cache.evict(100);
+    match evict_result {
+        true => {},
+        false => assert!(false)
+    }
 }
