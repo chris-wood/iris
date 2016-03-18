@@ -4,6 +4,7 @@ use std::str;
 use common::name as name;
 use common::name::Name as Name;
 
+#[derive(PartialEq, Clone, Debug)]
 pub enum TopLevelType {
     Interest = 0x0001,
     ContentObject = 0x0002,
@@ -11,23 +12,26 @@ pub enum TopLevelType {
     ValidationPayload = 0x0004
 }
 
-#[derive(PartialEq)]
+#[derive(PartialEq, Clone, Debug)]
 pub enum PacketType {
     Interest = 0x0000,
     ContentObject = 0x0001,
     InterestReturn = 0x0002
 }
 
+#[derive(PartialEq, Clone, Debug)]
 enum HopByHopHeaderType {
     InterestLifetime = 0x0001,
     CacheTime = 0x0002
 }
 
+#[derive(PartialEq, Clone, Debug)]
 enum MessageType {
     Name = 0x0000,
     Payload = 0x0001
 }
 
+#[derive(PartialEq, Clone, Debug)]
 enum NameType {
     NameSegment = 0x0001,
     PayloadID = 0x0002,
@@ -35,16 +39,19 @@ enum NameType {
     AppUpper = 0x1FFF
 }
 
+#[derive(PartialEq, Clone, Debug)]
 enum InterestMessageTLVType {
     KeyIdRestriction = 0x0002,
     HashRestriction = 0x0003
 }
 
+#[derive(PartialEq, Clone, Debug)]
 enum ContentObjectMessageTLVType {
     PayloadType = 0x0005,
     ExpiryTime = 0x0006
 }
 
+#[derive(PartialEq, Clone, Debug)]
 enum ValidationType {
     Crc32 = 0x0002,
     HmacSha256 = 0x0004,
@@ -54,6 +61,7 @@ enum ValidationType {
     EcSecp384R1 = 0x0008,
 }
 
+#[derive(PartialEq, Clone, Debug)]
 enum ValidationDependentDataType {
     KeyId = 0x0009,
     PublicKey = 0x000B,
@@ -62,6 +70,7 @@ enum ValidationDependentDataType {
     SignatureTime = 0x000F
 }
 
+#[derive(Clone, Debug)]
 pub struct Message {
     pub message_bytes: Vec<u8>,
     pub packet_type: PacketType,

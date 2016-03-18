@@ -25,7 +25,7 @@ pub enum ProcessorError {
 }
 
 impl<'a> Processor<'a> {
-    pub fn new(fwdRef: Forwarder<'a>) -> Processor { 
+    pub fn new(fwdRef: Forwarder<'a>) -> Processor {
         Processor {
             fwd: fwdRef,
         }
@@ -82,11 +82,11 @@ impl<'a> Processor<'a> {
     }
 
     // TODO: extract the send functions to separate functions
-    fn process_interest(&mut self, msg: Message, incoming_face: usize) -> Result<(Option<Message>, Vec<usize>), ProcessorError> {
-        /*match self.fwd.process_interest(msg, incoming_face) {
+    fn process_interest<'b>(&mut self, msg: &'b Message, incoming_face: usize) -> Result<(Option<&'b Message>, Vec<usize>), ProcessorError> {
+        match self.fwd.process_interest(msg, incoming_face) {
             Ok((ForwarderResult::CacheHit, msg, id)) => { // content, return it
                 let inner_msg = msg.unwrap();
-    
+
                 // TODO: finishme
 
                 return Err(ProcessorError::NotImplementedYet);
@@ -94,31 +94,31 @@ impl<'a> Processor<'a> {
             Ok((ForwarderResult::PitHit, _, _)) => { // do nothing, this is OK
                 return Err(ProcessorError::NotImplementedYet);
             },
-            Ok ((ForwarderResult::ForwardInterest, msg, id)) => { // interest, forward it
+            Ok ((ForwarderResult::ForwardMessage, msg, id)) => { // interest, forward it
                 let mut vec = Vec::new();
-                vec.push(id);               
+                vec.push(id);
                 return Ok((msg, vec));
             },
             Err(e) => {
                 return Err(ProcessorError::NotImplementedYet);
             }
-        }*/
+        }
         return Err(ProcessorError::NotImplementedYet);
     }
 
-    fn process_content(&self, msg: Message, incoming_face: usize) -> Result<(Option<Message>, Vec<usize>), ProcessorError> {
+    fn process_content<'b>(&self, msg: &'b Message, incoming_face: usize) -> Result<(Option<&'b Message>, Vec<usize>), ProcessorError> {
         println!("Processing a content object.");
-    
+
         /*match self.fwd.process_response(msg, incoming_face) {
             Ok((ForwarderResult::ForwardContent, ids)) => {
-                return Ok((Some(msg), ids)); 
+                return Ok((Some(msg), ids));
             }
         }*/
 
         return Err(ProcessorError::NotImplementedYet);
     }
 
-    pub fn process_message(&mut self, msg: Message, incoming_face: usize) -> Result<(Option<Message>, Vec<usize>), ProcessorError> {
+    pub fn process_message<'b>(&mut self, msg: &'b Message, incoming_face: usize) -> Result<(Option<&'b Message>, Vec<usize>), ProcessorError> {
         // TODO: wrap these up in state checker functions
         if msg.packet_type == core::packet::message::PacketType::Interest {
             return self.process_interest(msg, incoming_face);

@@ -47,8 +47,8 @@ struct TCPLink {
     interest: EventSet
 }
 
-impl TCPLink {
-    fn read<'a,'b>(&mut self, processor: &'a mut core::processor::Processor<'b>) -> Option<(core::packet::message::Message, Vec<usize>)> {
+impl TCPLink { // processor: &'a mut core::processor::Processor<'b>
+    fn read<'a,'b>(&mut self) -> Option<(Box<[u8]>, usize)> { //Option<(core::packet::message::Message, Vec<usize>)> {
         loop {
             let mut buf = [0; 4096];
             match self.socket.try_read(&mut buf) {
@@ -61,19 +61,20 @@ impl TCPLink {
                 },
                 Ok(Some(len)) => {
                     if len > 0 {
-                        let msg = core::packet::decode_packet(&buf[0..len]);
-                        match processor.process_message(msg, self.id.as_usize()) {
-                            Ok((Some(msg), id)) => { // content, return it
-                                return Some((msg, id));
-                            },
-                            Ok((None, _)) => {
-                                break;
-                            }
-                            Err(e) => {
-                                println!("Error: {:?}", e);
-                                break;
-                            }
-                        }
+                        return Some((Box::new(buf), len));
+                        // let msg = core::packet::decode_packet(&buf[0..len]);
+                        // match processor.process_message(msg, self.id.as_usize()) {
+                        //     Ok((Some(msg), id)) => { // content, return it
+                        //         return Some((msg, id));
+                        //     },
+                        //     Ok((None, _)) => {
+                        //         break;
+                        //     }
+                        //     Err(e) => {
+                        //         println!("Error: {:?}", e);
+                        //         break;
+                        //     }
+                        // }
                     } else {
                         break
                     }
@@ -101,7 +102,7 @@ impl TCPLink {
 
 struct LinkManager<'a,'b : 'a> {
     processor: &'a mut core::processor::Processor<'b>,
-    links: HashMap<Token, TCPLink>, // TOOD: make this a generic type of Link
+    links: HashMap<Token, TCPLink>, // TODO: make this a generic type of Link
     link_names: HashMap<String, Token>,
     token_counter: usize,
     tcp_socket: TcpListener,
@@ -138,10 +139,10 @@ impl<'a,'b> LinkManager<'a,'b> {
     }
 
     fn get_link_by_id(&mut self, token: &Token) -> Option<&mut TCPLink> {
-        // if self.links.contains_key(token) {
+        if self.links.contains_key(token) {
             return self.links.get_mut(token);
-        // }
-        // return None;
+        }
+        return None;
     }
 
     pub fn process_control(&mut self, event_loop: &mut EventLoop<LinkManager>, msg: String) -> Result<bool, ControlMessageError> {
@@ -281,20 +282,32 @@ impl<'a,'b> Handler for LinkManager<'a,'b> {
                 },
                 token => {
                     let mut ingress_link = self.links.get_mut(&token).unwrap();
+                    let link_id = ingress_link.id;
 
-                    match ingress_link.read(self.processor) {
-                        Some((msg, ids)) => {
-                            for id in ids {
-                                println!("FORWARD TO ID {}", id);
-                                let token = Token(id as usize);
+                    match ingress_link.read() {
+                        Some((buffer, length)) => {
+                            let msg = core::packet::decode_packet(&buffer[0..length]);
+                            match self.processor.process_message(&msg, link_id.as_usize()) {
+                                Ok((Some(output_message), output_ids)) => { // forward the message to every ID in the list
+                                    for link_id in output_ids {
+                                        println!("FORWARD TO ID {}", link_id);
+                                        let token = Token(link_id as usize);
 
-                                let sender = event_loop.channel();
-                                //sender.send((token, msg));
+                                        let sender = event_loop.channel();
+                                        let msg_copy = output_message.clone();
+                                        sender.send((token, msg_copy));
+                                    }
+                                },
+                                Ok((None, _)) => {
+                                    // pass
+                                }
+                                Err(e) => {
+                                    println!("Error: {:?}", e);
+                                    // pass
+                                }
                             }
-                        }
-                        None => {
-                            // pass
-                        }
+                        },
+                        None => { /* pass */ }
                     };
 
                     event_loop.reregister(&ingress_link.socket, token, EventSet::readable(),

@@ -18,8 +18,7 @@ use common;
 pub enum ForwarderResult {
     CacheHit,
     PitHit,
-    ForwardInterest,
-    ForwardContent
+    ForwardMessage
 }
 
 #[derive(Debug)]
@@ -52,12 +51,12 @@ impl<'a> Forwarder<'a> {
         self.fib.insert(prefix, link_id);
     }
 
-    fn process_response(&mut self, msg: Message, incoming_face: usize) -> Result<(ForwarderResult, Vec<usize>), ForwarderError> {
+    fn process_response(&mut self, msg: &Message, incoming_face: usize) -> Result<(ForwarderResult, Vec<usize>), ForwarderError> {
         let vec = Vec::new();
-        return Ok((ForwarderResult::ForwardContent, vec));
+        return Ok((ForwarderResult::ForwardMessage, vec));
     }
 
-    fn process_interest(&mut self, msg: Message, incoming_face: usize) -> Result<(ForwarderResult, Option<Message>, usize), ForwarderError> {
+    fn process_interest<'b>(&mut self, msg: &'b Message, incoming_face: usize) -> Result<(ForwarderResult, Option<&'b Message>, usize), ForwarderError> {
         println!("Processing an interest.");
 
         // let mut name = msg.get_name();
@@ -70,7 +69,7 @@ impl<'a> Forwarder<'a> {
         cs.dump_contents();
 
         // let cs_match = match cs.lookup(&name, &key_id_restr, &hash_restr) {
-        let cs_match = match cs.lookup(&msg) {
+        let cs_match = match cs.lookup(msg) {
             Some(entry) => {
                 println!("In the cache!");
                 return Ok((ForwarderResult::CacheHit, Some(msg), incoming_face));
@@ -82,7 +81,7 @@ impl<'a> Forwarder<'a> {
 
                 let mut toinsert = false;
                 // let pit_match = match pit.lookup(&name, &key_id_restr, &hash_restr) {
-                let pit_match = match pit.lookup(&msg) {
+                let pit_match = match pit.lookup(msg) {
                     Some(entry) => {
                         println!("In the PIT!");
                         return Ok((ForwarderResult::PitHit, None, 0));
@@ -99,10 +98,10 @@ impl<'a> Forwarder<'a> {
                         let fib = &self.fib;
 
                         // let fib_match = match fib.lookup(&name) {
-                        let fib_match = match fib.lookup(&msg) {
+                        let fib_match = match fib.lookup(msg) {
                             Some(entry) => {
                                 println!("In the FIB!");
-                                return Ok((ForwarderResult::ForwardInterest, Some(msg), entry.faces[0])); // TODO: this is where some strategy is applied.
+                                return Ok((ForwarderResult::ForwardMessage, Some(msg), entry.faces[0])); // TODO: this is where some strategy is applied.
                             },
                             None => {
                                 println!("No FIB entry--DROP!");
