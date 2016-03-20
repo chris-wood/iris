@@ -161,7 +161,7 @@ impl<'a,'b> LinkManager<'a,'b> {
                     // self.link_manager.add_link()
                     return Err(ControlMessageError::InvalidControlMessage);
                 } else {
-                    println!("Adding the link");
+                    println!("Adding the link with nick {}", nick);
                     // self.link_manager.add_link(nick.to_owned(), LinkType::TCP, hostport.to_owned());
                     self.add_link(event_loop, nick.to_owned(), LinkType::TCP, address.to_owned());
                     return Ok(false);
@@ -171,9 +171,15 @@ impl<'a,'b> LinkManager<'a,'b> {
                 let mut name = params[2];
                 let mut route = params[3];
 
-                let link_id = self.link_names.get_mut(&name.to_owned()).unwrap();
+                println!("Adding a route for {} {}", name, route);
+
+                match self.link_names.get_mut(&name.to_owned()) {
+                    Some(link_id) => {
+                        self.processor.add_fib_entry(route.to_owned(), link_id.as_usize());
+                    }, None => { println!("Link {} not found.", name); }
+                }
                 // let link_id = Token(10);
-                self.processor.add_fib_entry(route.to_owned(), link_id.as_usize());
+
 
                 return Ok(false);
             } else if target == "listener" {
@@ -184,13 +190,13 @@ impl<'a,'b> LinkManager<'a,'b> {
         return Err(ControlMessageError::InvalidControlMessage);
     }
 
-    fn add_link(&mut self, event_loop: &mut EventLoop<LinkManager>, linkNick: String, linktype: LinkType, address: String)  {
-        // TODO: this should match on the link type
+    fn add_link(&mut self, event_loop: &mut EventLoop<LinkManager>, link_nick: String, link_type: LinkType, address: String)  {
         self.token_counter += 1;
         let new_token = Token(self.token_counter);
 
         print!("New link added with ID {}", new_token.as_usize());
 
+        // TODO: pattern match on the LinkType parameter
         let socket_address = address.parse::<SocketAddr>().unwrap();
         match TcpStream::connect(&socket_address).unwrap() {
             socket => {
@@ -199,10 +205,11 @@ impl<'a,'b> LinkManager<'a,'b> {
                 event_loop.register(&self.links[&new_token].socket,
                                         new_token, EventSet::readable(),
                                         PollOpt::edge() | PollOpt::oneshot()).unwrap();
+                println!("Registered...");
             }
         }
 
-        self.link_names.insert(linkNick, new_token);
+        self.link_names.insert(link_nick, new_token);
     }
 }
 

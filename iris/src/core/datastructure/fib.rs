@@ -44,11 +44,12 @@ impl FIB {
 
     pub fn lookup(&self, target: &Message) -> Option<&FIBEntry> {
         let mut name = target.get_name();
-        return self.lookup_by_name(&name);
+        return self.lookup_by_name(&mut name);
     }
 
-    pub fn lookup_by_name(&self, name: &Name) -> Option<&FIBEntry> {
-        println!("Lookup {}", name);
+    pub fn lookup_by_name(&self, name: &mut Name) -> Option<&FIBEntry> {
+        println!("Lookup ...");
+        name.display();
         for entry in self.entries.iter() {
             println!("Against {}", entry.name);
             if entry.name.is_prefix_of(&name) {
@@ -112,7 +113,7 @@ fn test_fib_insert_merge() {
 fn test_fib_lookup() {
     let mut fib = FIB::new();
 
-    let n1 = Name::create_from_string("/hello/world".to_owned()).unwrap();
+    let mut n1 = Name::create_from_string("/hello/world".to_owned()).unwrap();
     let face = 1;
     let insert_result = fib.insert(&n1, 1);
     assert!(insert_result);

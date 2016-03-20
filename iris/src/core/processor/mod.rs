@@ -6,6 +6,7 @@ use core;
 use core::packet;
 use core::Forwarder as Forwarder;
 use core::ForwarderResult as ForwarderResult;
+use core::ForwarderResponseResult as ForwarderResponseResult;
 use core::packet::message::Message as Message;
 use common::name::Name as Name;
 
@@ -20,6 +21,7 @@ pub struct Processor<'a> {
 
 #[derive(Debug)]
 pub enum ProcessorError {
+    InternalError,
     NotImplementedYet,
     UnsupportedMessageType
 }
@@ -106,14 +108,16 @@ impl<'a> Processor<'a> {
         return Err(ProcessorError::NotImplementedYet);
     }
 
-    fn process_content<'b>(&self, msg: &'b Message, incoming_face: usize) -> Result<(Option<&'b Message>, Vec<usize>), ProcessorError> {
+    fn process_content<'b>(&mut self, msg: &'b Message, incoming_face: usize) -> Result<(Option<&'b Message>, Vec<usize>), ProcessorError> {
         println!("Processing a content object.");
 
-        /*match self.fwd.process_response(msg, incoming_face) {
-            Ok((ForwarderResult::ForwardContent, ids)) => {
+        match self.fwd.process_response(msg, incoming_face) {
+            Ok((ForwarderResponseResult::ForwardMessage, ids)) => {
                 return Ok((Some(msg), ids));
+            }, Err(e) => {
+                return Err(ProcessorError::InternalError);
             }
-        }*/
+        }
 
         return Err(ProcessorError::NotImplementedYet);
     }

@@ -18,6 +18,12 @@ pub struct PITEntry {
     lifetime: u32, // number of epochs
 }
 
+impl PITEntry {
+    pub fn get_faces(&self) -> Vec<usize> {
+        return self.arrival_faces.clone();
+    }
+}
+
 pub struct PIT {
     entries: Vec<PITEntry>
 }
@@ -46,6 +52,7 @@ impl PIT {
     pub fn lookup(&self, target: &Message) -> Option<&PITEntry> {
         for entry in self.entries.iter() {
             let target_name = target.get_name();
+            println!("Checking {} ", target_name);
             if entry.name.equals(&target_name) {
                 // TODO: need to add missing checks for the key_id and content_id
                 return Some(entry);
@@ -55,7 +62,7 @@ impl PIT {
         return None;
     }
 
-    fn lookup_mut(&mut self, target: &Message) -> Option<(&mut PITEntry, usize)> {
+    pub fn lookup_mut(&mut self, target: &Message) -> Option<(&mut PITEntry, usize)> {
         let mut index: usize = 0;
         for entry in self.entries.iter_mut() {
             let target_name = target.get_name();

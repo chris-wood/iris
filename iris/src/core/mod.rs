@@ -22,8 +22,15 @@ pub enum ForwarderResult {
 }
 
 #[derive(Debug)]
+pub enum ForwarderResponseResult {
+    ForwardMessage,
+}
+
+#[derive(Debug)]
 pub enum ForwarderError {
-    NoRouteInFib
+    NoRouteInFib,
+    NoMatchingPITEntry,
+    InternalError
 }
 
 pub struct Forwarder<'a> {
@@ -51,11 +58,29 @@ impl<'a> Forwarder<'a> {
         self.fib.insert(prefix, link_id);
     }
 
-    fn process_response(&mut self, msg: &Message, incoming_face: usize) -> Result<(ForwarderResult, Vec<usize>), ForwarderError> {
-        let vec = Vec::new();
-        return Ok((ForwarderResult::ForwardMessage, vec));
+    fn process_response(&mut self, msg: &Message, incoming_face: usize) -> Result<(ForwarderResponseResult, Vec<usize>), ForwarderError> {
+        let mut do_flush = false;
+        let faces: Vec<usize>;
+
+        let pit_match = match self.pit.lookup_mut(msg) {
+            Some((entry, index)) => {
+                faces = entry.get_faces();
+                do_flush = true;
+            },
+            None => {
+                return Err(ForwarderError::NoMatchingPITEntry);
+            }
+        };
+
+        if do_flush {
+            self.pit.flush(msg);
+            return Ok((ForwarderResponseResult::ForwardMessage, faces));
+        } else {
+            return Err(ForwarderError::InternalError);
+        }
     }
 
+    // TODO: make this return a vector of faces
     fn process_interest<'b>(&mut self, msg: &'b Message, incoming_face: usize) -> Result<(ForwarderResult, Option<&'b Message>, usize), ForwarderError> {
         println!("Processing an interest.");
 
@@ -91,23 +116,6 @@ impl<'a> Forwarder<'a> {
 
                         // Flag insertion. (Can't do it here because we're borrowing pit from above call to lookup)
                         toinsert = true;
-
-                        // TODO: forward according to the FIB
-                        println!("Forward accordingly...");
-
-                        let fib = &self.fib;
-
-                        // let fib_match = match fib.lookup(&name) {
-                        let fib_match = match fib.lookup(msg) {
-                            Some(entry) => {
-                                println!("In the FIB!");
-                                return Ok((ForwarderResult::ForwardMessage, Some(msg), entry.faces[0])); // TODO: this is where some strategy is applied.
-                            },
-                            None => {
-                                println!("No FIB entry--DROP!");
-                                return Err(ForwarderError::NoRouteInFib);
-                            }
-                        };
                     }
                 };
 
@@ -115,6 +123,25 @@ impl<'a> Forwarder<'a> {
                     println!("I inserted this into the PIT.");
                     // pit.insert(&name, &key_id_restr, &hash_restr, incoming_face);
                     pit.insert(&msg, incoming_face);
+
+                    // TODO: forward according to the FIB
+                    println!("Forward accordingly...");
+
+                    let fib = &self.fib;
+
+                    // let fib_match = match fib.lookup(&name) {
+                    let fib_match = match fib.lookup(msg) {
+                        Some(entry) => {
+                            println!("In the FIB!");
+                            return Ok((ForwarderResult::ForwardMessage, Some(msg), entry.faces[0])); // TODO: this is where some strategy is applied.
+                        },
+                        None => {
+                            println!("No FIB entry--DROP!");
+                            return Err(ForwarderError::NoRouteInFib);
+                        }
+                    };
+                } else {
+                    return Ok((ForwarderResult::PitHit, None, 0));
                 }
             },
         };
