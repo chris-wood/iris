@@ -52,14 +52,6 @@ impl Cache {
         }
     }
 
-    pub fn dump_contents(&self) {
-        println!("dump_contents() start.");
-        for entry in self.entries.iter() {
-            println!("entry {:?}", entry);
-        }
-        println!("dump_contents() done.");
-    }
-
     pub fn lookup(&self, target: &Message) -> Option<&CacheEntry> {
         // Extract the request key parameters
         let name = target.get_name();
@@ -71,8 +63,6 @@ impl Cache {
             if !entry.name.equals(&name) {
                 is_match = false;
             }
-
-            println!("matched name? {}", is_match);
 
             // TODO: move to funcion.
             if is_match {
@@ -95,8 +85,6 @@ impl Cache {
                 }
             }
 
-            println!("matched key_id? {}", is_match);
-
             if is_match {
                 match content_id {
                     Some ((o, l)) => {
@@ -116,8 +104,6 @@ impl Cache {
                     }, None => {}
                 }
             }
-
-            println!("matched content_id? {}", is_match);
 
             if is_match {
                 return Some(entry);

@@ -47,8 +47,8 @@ struct TCPLink {
     interest: EventSet
 }
 
-impl TCPLink { // processor: &'a mut core::processor::Processor<'b>
-    fn read<'a,'b>(&mut self) -> Option<(Box<[u8]>, usize)> { //Option<(core::packet::message::Message, Vec<usize>)> {
+impl TCPLink {
+    fn read<'a,'b>(&mut self) -> Option<(Box<[u8]>, usize)> {
         loop {
             let mut buf = [0; 4096];
             match self.socket.try_read(&mut buf) {
@@ -62,19 +62,6 @@ impl TCPLink { // processor: &'a mut core::processor::Processor<'b>
                 Ok(Some(len)) => {
                     if len > 0 {
                         return Some((Box::new(buf), len));
-                        // let msg = core::packet::decode_packet(&buf[0..len]);
-                        // match processor.process_message(msg, self.id.as_usize()) {
-                        //     Ok((Some(msg), id)) => { // content, return it
-                        //         return Some((msg, id));
-                        //     },
-                        //     Ok((None, _)) => {
-                        //         break;
-                        //     }
-                        //     Err(e) => {
-                        //         println!("Error: {:?}", e);
-                        //         break;
-                        //     }
-                        // }
                     } else {
                         break
                     }
@@ -85,12 +72,10 @@ impl TCPLink { // processor: &'a mut core::processor::Processor<'b>
     }
 
     fn write(&mut self, msg: core::packet::message::Message) {
-        println!("Attempting to write a message to this socket");
         let bytes: Vec<u8> = msg.bytes();
         self.socket.write(&bytes[..]);
     }
 
-    // fn new(token: Token, socket: TcpStream, processor: &'a mut core::processor::Processor<'a>) -> TCPLink<'a> {
     fn new(token: Token, socket: TcpStream) -> TCPLink {
         TCPLink {
             id: token,
@@ -116,7 +101,6 @@ const SERVER_CTL_TOKEN: Token = Token(2);
 const SERVER_BASE_TOKEN: Token = Token(3);
 
 impl<'a,'b> LinkManager<'a,'b> {
-    // TODO: invoke this later...
     fn emit_message(&mut self, msg: core::packet::message::Message, token: Token) {
         // self.links.get(&token).unwrap().write(msg);
     }
@@ -282,8 +266,8 @@ impl<'a,'b> Handler for LinkManager<'a,'b> {
                             println!("Success, and pass this command to the forwarder.");
                         }, Ok(false) => {
                             println!("Success, but take no further action.");
-                        }, Err(e) => {
-                            println!("Error parsing the command.");
+                        }, Err(_) => {
+                            println!("Error parsing the command");
                         }
                     }
                 },
@@ -324,9 +308,7 @@ impl<'a,'b> Handler for LinkManager<'a,'b> {
         }
     }
 
-    // WRITE
-    fn notify(&mut self, event_loop: &mut EventLoop<LinkManager>, msg_token: (Token, core::packet::message::Message)) {
-        print!("Finally... sending the message to the outbound link.");
+    fn notify(&mut self, _: &mut EventLoop<LinkManager>, msg_token: (Token, core::packet::message::Message)) {
         let (token, msg) = msg_token;
         let mut egress_link = self.links.get_mut(&token).unwrap();
         egress_link.write(msg);
@@ -341,7 +323,7 @@ fn main() {
 
     // Create the forwarder and message processor
     // Note; the forwarder now owns all three structures.
-    let mut fwd = core::Forwarder::new(&fcs, &mut fpit, ffib);
+    let fwd = core::Forwarder::new(&mut fcs, &mut fpit, &mut ffib);
     let mut processor = core::processor::Processor::new(fwd);
 
     let default_tcp_listener = "127.0.0.1:9696".parse::<SocketAddr>().unwrap();

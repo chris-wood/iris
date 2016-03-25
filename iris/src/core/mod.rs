@@ -1,5 +1,4 @@
 pub mod datastructure;
-pub mod link;
 pub mod packet;
 pub mod processor;
 
@@ -35,12 +34,12 @@ pub enum ForwarderError {
 
 pub struct Forwarder<'a> {
     pit: &'a mut pit::PIT,
-    cs: &'a cs::Cache,
-    fib: fib::FIB
+    cs: &'a mut cs::Cache,
+    fib: &'a mut fib::FIB
 }
 
 impl<'a> Forwarder<'a> {
-    pub fn new(fcs: &'a cs::Cache, fpit: &'a mut pit::PIT, ffib: fib::FIB) -> Forwarder<'a> {
+    pub fn new(fcs: &'a mut cs::Cache, fpit: &'a mut pit::PIT, ffib: &'a mut fib::FIB) -> Forwarder<'a> {
         Forwarder {
             cs: fcs,
             pit: fpit,
@@ -81,67 +80,45 @@ impl<'a> Forwarder<'a> {
     }
 
     // TODO: make this return a vector of faces
-    fn process_interest<'b>(&mut self, msg: &'b Message, incoming_face: usize) -> Result<(ForwarderResult, Option<&'b Message>, usize), ForwarderError> {
-        println!("Processing an interest.");
-
-        // let mut name = msg.get_name();
-
-        // TODO: need to implement the getters for these things
-        // let mut key_id_restr = Vec::new();
-        // let mut hash_restr = Vec::new();
-
+    fn process_interest<'b>(&mut self, msg: &'b Message, incoming_face: usize) -> Result<(ForwarderResult, Option<&'b Message>, Vec<usize>), ForwarderError> {
         let cs = &self.cs;
-        cs.dump_contents();
-
-        // let cs_match = match cs.lookup(&name, &key_id_restr, &hash_restr) {
         let cs_match = match cs.lookup(msg) {
             Some(entry) => {
-                println!("In the cache!");
-                return Ok((ForwarderResult::CacheHit, Some(msg), incoming_face));
-            }, None => {
-                println!("Not in the cache!");
-
-                // TODO: lookup the PIT
+                return Ok((ForwarderResult::CacheHit, Some(msg), vec!(incoming_face)));
+            },
+            None => {
                 let pit = &mut self.pit;
 
-                let mut toinsert = false;
-                // let pit_match = match pit.lookup(&name, &key_id_restr, &hash_restr) {
+                let mut to_forward = false;
+                let mut to_collapse = false;
                 let pit_match = match pit.lookup(msg) {
                     Some(entry) => {
-                        println!("In the PIT!");
-                        return Ok((ForwarderResult::PitHit, None, 0));
+                        to_collapse = true;
                     },
                     None => {
-                        println!("Not in the PIT!");
-
-                        // Flag insertion. (Can't do it here because we're borrowing pit from above call to lookup)
-                        toinsert = true;
+                        to_forward = true;
                     }
                 };
 
-                if toinsert {
-                    println!("I inserted this into the PIT.");
-                    // pit.insert(&name, &key_id_restr, &hash_restr, incoming_face);
+                if to_collapse {
+                    pit.insert(&msg, incoming_face);
+                    return Ok((ForwarderResult::PitHit, None, Vec::new()));
+                }
+
+                if to_forward {
                     pit.insert(&msg, incoming_face);
 
-                    // TODO: forward according to the FIB
-                    println!("Forward accordingly...");
-
                     let fib = &self.fib;
-
-                    // let fib_match = match fib.lookup(&name) {
                     let fib_match = match fib.lookup(msg) {
                         Some(entry) => {
-                            println!("In the FIB!");
-                            return Ok((ForwarderResult::ForwardMessage, Some(msg), entry.faces[0])); // TODO: this is where some strategy is applied.
+                            return Ok((ForwarderResult::ForwardMessage, Some(msg), entry.faces.clone()));
                         },
                         None => {
-                            println!("No FIB entry--DROP!");
                             return Err(ForwarderError::NoRouteInFib);
                         }
                     };
                 } else {
-                    return Ok((ForwarderResult::PitHit, None, 0));
+                    return Ok((ForwarderResult::PitHit, None, vec!(incoming_face)));
                 }
             },
         };

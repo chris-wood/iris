@@ -10,7 +10,6 @@ use core::ForwarderResponseResult as ForwarderResponseResult;
 use core::packet::message::Message as Message;
 use common::name::Name as Name;
 
-
 use std::io;
 use std::io::prelude::*;
 use std::thread;
@@ -86,7 +85,7 @@ impl<'a> Processor<'a> {
     // TODO: extract the send functions to separate functions
     fn process_interest<'b>(&mut self, msg: &'b Message, incoming_face: usize) -> Result<(Option<&'b Message>, Vec<usize>), ProcessorError> {
         match self.fwd.process_interest(msg, incoming_face) {
-            Ok((ForwarderResult::CacheHit, msg, id)) => { // content, return it
+            Ok((ForwarderResult::CacheHit, msg, ids)) => { // content, return it
                 let inner_msg = msg.unwrap();
 
                 // TODO: finishme
@@ -96,10 +95,8 @@ impl<'a> Processor<'a> {
             Ok((ForwarderResult::PitHit, _, _)) => { // do nothing, this is OK
                 return Err(ProcessorError::NotImplementedYet);
             },
-            Ok ((ForwarderResult::ForwardMessage, msg, id)) => { // interest, forward it
-                let mut vec = Vec::new();
-                vec.push(id);
-                return Ok((msg, vec));
+            Ok ((ForwarderResult::ForwardMessage, msg, ids)) => { // interest, forward it
+                return Ok((msg, ids));
             },
             Err(e) => {
                 return Err(ProcessorError::NotImplementedYet);
