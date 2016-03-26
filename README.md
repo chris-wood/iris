@@ -1,5 +1,5 @@
 # iris
-Prototypical iris forwarder written in Rust to test CCNx interoperability
+Prototype iris forwarder written in Rust to test CCNx interoperability
 
 Receiver:
   ./receiver 9697 ~/Projects/iris/data/hello_data
