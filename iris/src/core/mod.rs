@@ -1,6 +1,7 @@
 pub mod datastructure;
 pub mod packet;
 pub mod processor;
+pub mod link;
 
 use std::vec::Vec as Vec;
 
@@ -79,7 +80,6 @@ impl<'a> Forwarder<'a> {
         }
     }
 
-    // TODO: make this return a vector of faces
     fn process_interest<'b>(&mut self, msg: &'b Message, incoming_face: usize) -> Result<(ForwarderResult, Option<&'b Message>, Vec<usize>), ForwarderError> {
         let cs = &self.cs;
         let cs_match = match cs.lookup(msg) {
