@@ -11,6 +11,13 @@ pub struct CacheEntry {
     data: Vec<u8>
 }
 
+impl CacheEntry {
+    pub fn build_message(&self) -> Message {
+        let message = Message::new(&self.data[..]);
+        return message;
+    }
+}
+
 #[derive(Debug)]
 pub struct Cache {
     size: usize,

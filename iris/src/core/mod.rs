@@ -49,12 +49,7 @@ impl<'a> Forwarder<'a> {
     }
 
     pub fn add_route(&mut self, prefix: &Name, link_id: usize) {
-        print!("Inserting into FIB: ");
-
         let mut cloned = prefix.clone();
-        cloned.display();
-        println!("");
-
         self.fib.insert(prefix, link_id);
     }
 
@@ -84,6 +79,8 @@ impl<'a> Forwarder<'a> {
         let cs = &self.cs;
         let cs_match = match cs.lookup(msg) {
             Some(entry) => {
+                // TODO: this is incorrect.
+                let response = entry.build_message();
                 return Ok((ForwarderResult::CacheHit, Some(msg), vec!(incoming_face)));
             },
             None => {

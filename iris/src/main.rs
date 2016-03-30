@@ -16,15 +16,6 @@ use core::datastructure::pit as pit;
 use core::datastructure::cs as cs;
 use core::link;
 
-use std::env;
-use std::io::prelude::*;
-use std::thread;
-use std::thread::JoinHandle;
-use std::error::Error;
-use std::fs::File;
-use std::path::Path;
-
-use std::collections::HashMap;
 use std::net::SocketAddr;
 use mio::tcp::*;
 use mio::udp::*;

@@ -91,7 +91,15 @@ pub struct Message {
 
 impl Message {
     // A public constructor
-    pub fn new(bytes: &[u8], new_packet_type: PacketType, new_payload_offset: usize, new_payload_length: usize, new_validation_offset: usize, new_validation_length: usize) -> Message {
+    // pub fn new(bytes: &[u8]) -> Message {
+    //     let mut byteVector = Vec::new();
+    //     for b in bytes {
+    //         byteVector.push(*b);
+    //     }
+    //     return Message { message_bytes: byteVector };
+    // }
+
+    pub fn new(bytes: &[u8]) -> Message {
         let mut byteVector = Vec::new();
         for b in bytes {
             byteVector.push(*b);
@@ -105,11 +113,11 @@ impl Message {
             key_id_length: 0,
             content_id_offset: 0,
             content_id_length: 0,
-            packet_type: new_packet_type,
-            payload_offset: new_payload_offset,
-            payload_length: new_payload_length,
-            validation_offset: new_validation_offset,
-            validation_length: new_validation_length,
+            packet_type: PacketType::Interest,
+            payload_offset: 0, //new_payload_offset,
+            payload_length: 0, //new_payload_length,
+            validation_offset: 0, //new_validation_offset,
+            validation_length: 0, //new_validation_length,
             message_name: String::new()
         }
     }

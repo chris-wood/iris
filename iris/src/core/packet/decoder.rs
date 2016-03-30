@@ -13,11 +13,6 @@ pub fn decode_packet_intro(slice: &[u8], mut offset: usize) -> (message::Message
     let flags: u8 = decode_tlv_parse_one(slice, offset); offset += 1;
     let header_length: u8 = decode_tlv_parse_one(slice, offset); offset += 1;
 
-    // Debug header info
-    //println!("TLV = {} {} {}", version, msg_type, plength);
-    //println!("      {} {}", rsvd, offset);
-    //println!("actual length = {}", slice.len());
-
     // TODO: assertion is too strong. return none
     assert!(slice.len() == (offset + plength as usize));
 
@@ -126,14 +121,8 @@ fn decode_tlv_name_value(msg: &mut message::Message, slice: &[u8], plength: u16,
         let name_segment_length: u16 = decode_tlv_parse_two(slice, offset); offset += 2;
         let name_segment_value: &[u8] = &slice[offset .. (offset + name_segment_length as usize)];
 
-        //print!("NAME TLV {} {} {} ", name_segment_type, offset, name_segment_length);
-
         msg.name_segment_offsets.push((offset, name_segment_length as usize));
         offset += name_segment_length as usize;
-
-        //for b in name_segment_value {
-        //    print!("{:X} ", b);
-        //}
     }
 
     if (target != offset) {
