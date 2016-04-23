@@ -7,7 +7,7 @@ use std::net::SocketAddr;
 use mio::tcp::*;
 use mio::udp::*;
 
-use mio::*; // http://nbaksalyar.github.io/2015/07/10/writing-chat-in-rust.html
+use mio::*;
 
 use bytes::{Buf, RingBuf, SliceBuf, MutBuf};
 

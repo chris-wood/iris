@@ -34,8 +34,7 @@ pub fn decode_packet_intro(slice: &[u8], mut offset: usize) -> (message::Message
         payload_offset: 0,
         payload_length: 0,
         validation_offset: 0,
-        validation_length: 0,
-        message_name: String::new()
+        validation_length: 0
     };
 
     if msg_type == (message::PacketType::ContentObject as u8) {

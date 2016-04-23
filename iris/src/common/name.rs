@@ -4,18 +4,12 @@ use std::string::String as String;
 
 #[derive(Debug)]
 pub struct Name {
-    // components: Vec<String>
     name_bytes: Vec<u8>,
     name_segment_offsets: Vec<(usize, usize)>
 }
 
 impl fmt::Display for Name {
-    // This trait requires `fmt` with this exact signature.
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        // Write strictly the first element into the supplied output
-        // stream: `f`. Returns `fmt::Result` which indicates whether the
-        // operation succeeded or failed. Note that `write!` uses syntax which
-        // is very similar to `println!`.
         let len = self.name_bytes.len();
         let mut i = 0;
         while i < len {
@@ -28,7 +22,6 @@ impl fmt::Display for Name {
 
 impl Name {
     pub fn create_from_bytes(bytes: &Vec<u8>, name_segment_offsets: &Vec<(usize, usize)>) -> Option<Name> {
-        // let mut components = Vec::new();
         let mut copy_bytes = Vec::new();
         let mut copy_offsets = Vec::new();
 

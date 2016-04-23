@@ -1,10 +1,6 @@
 extern crate mio;
 extern crate bytes;
 
-use mio::*; // http://nbaksalyar.github.io/2015/07/10/writing-chat-in-rust.html
-
-use bytes::{Buf, RingBuf, SliceBuf, MutBuf};
-
 use std::str;
 
 mod common;
@@ -16,6 +12,7 @@ use core::datastructure::pit as pit;
 use core::datastructure::cs as cs;
 use core::link;
 
+use mio::*;
 use std::net::SocketAddr;
 use mio::tcp::*;
 use mio::udp::*;
@@ -27,7 +24,7 @@ fn main() {
     let mut ffib = fib::FIB::new();
 
     // Create the forwarder and message processor
-    // Note; the forwarder now owns all three structures.
+    // NOTE: the forwarder now owns all three structures, and the processor owns the forwarder.
     let fwd = core::Forwarder::new(&mut fcs, &mut fpit, &mut ffib);
     let mut processor = core::processor::Processor::new(fwd);
 

@@ -84,9 +84,7 @@ pub struct Message {
     pub payload_offset: usize,
     pub payload_length: usize,
     pub validation_offset: usize,
-    pub validation_length: usize,
-
-    pub message_name: String
+    pub validation_length: usize
 }
 
 impl Message {
@@ -118,7 +116,6 @@ impl Message {
             payload_length: 0, //new_payload_length,
             validation_offset: 0, //new_validation_offset,
             validation_length: 0, //new_validation_length,
-            message_name: String::new()
         }
     }
 
@@ -160,9 +157,8 @@ impl Message {
             index = index + 1;
         }
 
-        // let num_components = self.name_segment_offsets.len();
-        let mut name_segment_offsets = Vec::new(); // =
-        let mut offsets = self.name_segment_offsets.clone(); //Vec::new();
+        let mut name_segment_offsets = Vec::new();
+        let mut offsets = self.name_segment_offsets.clone();
         for (o, l) in offsets {
             name_segment_offsets.push((o - self.name_offset, l));
         }
