@@ -19,12 +19,64 @@
     </section>
 
     <section class="main-content">
-      <h3>
-<a id="overview" class="anchor" href="#overview" aria-hidden="true"><span class="octicon octicon-link"></span></a>Overview.</h3>
+        <h3><a id="overview" class="anchor" href="#overview" aria-hidden="true"><span class="octicon octicon-link"></span></a>Overview</h3>
 
-      <p>
-        More information soon...
-      </p>
+        <p>
+            iris is a CCNx 1.0 forwarder with the following features:
+            <ul>
+                <li>CCNx 1.0 specification compatability (i.e., correct Interest, Content Object, and Interest Return forwarding).</li>
+                <li>UDP and TCP links (layer 2 Ethernet is not supported).</li>
+            </ul>
+        </p>
+
+        <p>
+            The following features are currently in progress:
+        </p>
+
+        <ul>
+            <li>FLIC manifest support with pre-fetching capabilities.</li>
+            <li>Optional response signature verification.</li>
+        </ul>
+
+        <p>
+            iris is not meant to be a high performance forwarder. It was built for
+            two reasons: (a) to learn Rust and (b) to aid academic research projects
+            at UC Irvine. To that end, I will try to keep it up to date so long
+            as my research activity requires it. Going forward, I cannot make any
+            promises about interoperability with other existing forwarders, e.g.,
+            the <a href="https://github.com/PARC/Athena/">PARC CCNx Athena forwarder</a>.
+        </p>
+
+        <h3><a id="control" class="anchor" href="#control" aria-hidden="true"><span class="octicon octicon-link"></span></a>irisctl</h3>
+        <p>
+            iris is controlled with a program called irisctl (iris control). This is
+            used to perform tasks such as creating passive link listeners, active
+            link connections, and managing FIB routes. Please consult the program
+            executable for comprehensive usage information (i.e., run `irisctl --help`).
+        </p>
+
+        <h3><a id="packet-flow" class="anchor" href="#packet-flow" aria-hidden="true"><span class="octicon octicon-link"></span></a>Packet Flow</h3>
+
+        <p>
+          iris uses the Rust mio asynchronous I/O library to read and write data from and to the network.
+          Each packet invokes the processing pipeline shown in the figure below.
+        </p>
+
+        <!-- TODO: include the image here -->
+        <img src="#" alt="pipeline"/>
+
+        <h3><a id="contrib" class="anchor" href="#contrib" aria-hidden="true"><span class="octicon octicon-link"></span></a>Contributing</h3>
+
+        <p>
+          As previously mentioned, iris was developed to aid my personal research.
+          I will update it as needed. However, I would openly welcome any contributions
+          to improve the design, implementation, or documentation. I'm not picky about
+          the format of contributions (i.e., email patches would work fine), but Github
+          pull requests would probably be easiest for everyone involved.
+        </p>
+
+        <!-- TODO: include the image here -->
+        <img src="#" alt="pipeline"/>
 
       <footer class="site-footer">
         <span class="site-footer-owner"><a href="https://github.com/chris-wood/iris">iris</a> is maintained by <a href="https://github.com/chris-wood">chris-wood</a>.</span>
@@ -34,6 +86,6 @@
 
     </section>
 
-  
+
   </body>
 </html>
