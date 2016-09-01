@@ -1,8 +1,12 @@
+use core::packet::decoder as decoder;
 use core::packet::message as message;
 
+pub enum DecoderError {
+    MalformedPacket,      
+}
+
 // TODO: this should just be decode_tlv
-// TODO: this should return an optional
-pub fn decode_packet_intro(slice: &[u8], mut offset: usize) -> (message::Message) {
+pub fn decode_packet_intro(slice: &[u8], mut offset: usize) -> Result<message::Message, DecoderError> {
 
     // Decode the fixed header
     let version: u8 = decode_tlv_parse_one(slice, offset); offset += 1;
@@ -14,7 +18,10 @@ pub fn decode_packet_intro(slice: &[u8], mut offset: usize) -> (message::Message
     let header_length: u8 = decode_tlv_parse_one(slice, offset); offset += 1;
 
     // TODO: assertion is too strong. return none
-    assert!(slice.len() == (offset + plength as usize));
+    if slice.len() != (offset + plength as usize) {
+        return Err(DecoderError::MalformedPacket)
+    }
+    //assert!(slice.len() == (offset + plength as usize));
 
     let mut byteVector = Vec::new();
     for b in slice {
@@ -44,11 +51,11 @@ pub fn decode_packet_intro(slice: &[u8], mut offset: usize) -> (message::Message
     // TODO: create the message here
     let mut consumed: usize = decode_tlv_toplevel(&mut msg, slice, plength, offset);
 
-    return msg;
+    return Ok(msg);
 }
 
 fn decode_tlv_parse_one(slice: &[u8], offset: usize) -> (u8) {
-    return (slice[offset] as u8);
+    return slice[offset] as u8;
 }
 
 fn decode_tlv_parse_two(slice: &[u8], offset: usize) -> (u16) {
@@ -76,7 +83,7 @@ fn decode_tlv_message(msg: &mut message::Message, slice: &[u8], plength: u16, mu
     }
 
     // Check to see if we've reached the end of the packet
-    if ((start_offset + (plength as usize)) == offset) {
+    if (start_offset + (plength as usize)) == offset {
         return offset;
     }
 
@@ -124,7 +131,7 @@ fn decode_tlv_name_value(msg: &mut message::Message, slice: &[u8], plength: u16,
         offset += name_segment_length as usize;
     }
 
-    if (target != offset) {
+    if target != offset {
         println!("An error occurred!");
         return -1;
     }

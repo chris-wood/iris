@@ -124,7 +124,6 @@ impl PIT {
     }
 }
 
-
 #[test]
 fn test_pit_insert() {
     let path = Path::new("../data/packet1_interest.bin");

@@ -78,8 +78,8 @@ impl Cache {
                         let length = entry.key_id_restriction.len();
                         if l == length {
                             let mut index = 0;
-                            while (index < l) {
-                                if (entry.key_id_restriction[index] != target.byte_at(o + index)) {
+                            while index < l {
+                                if entry.key_id_restriction[index] != target.byte_at(o + index) {
                                     is_match = false;
                                     break;
                                 }
@@ -98,8 +98,8 @@ impl Cache {
                         let length = entry.content_id_restriction.len();
                         if l == length {
                             let mut index = 0;
-                            while (index < l) {
-                                if (entry.content_id_restriction[index] != target.byte_at(o + index)) {
+                            while index < l {
+                                if entry.content_id_restriction[index] != target.byte_at(o + index) {
                                     is_match = false;
                                     break;
                                 }
@@ -122,7 +122,7 @@ impl Cache {
 
     fn evict(&mut self, length: usize) -> (bool) {
         let length = self.entries.len();
-        if (length > 1) {
+        if length > 1 {
             self.entries.swap_remove(0);
         }
         return true;
@@ -141,7 +141,7 @@ impl Cache {
         match target.get_key_id_overlay() {
             Some ((o, l)) => {
                 let mut index = o;
-                while (index < l) {
+                while index < l {
                     key_id.push(bytes[index]);
                     index = index + 1;
                 }
@@ -152,7 +152,7 @@ impl Cache {
         match target.get_key_id_overlay() {
             Some ((o, l)) => {
                 let mut index = o;
-                while (index < l) {
+                while index < l {
                     content_id.push(bytes[index]);
                     index = index + 1;
                 }
@@ -196,11 +196,14 @@ fn test_cache_insert() {
     let buffer = &file_contents[..];
 
     let msg = Packet::decode_packet(buffer);
-
-    let mut cache = Cache::new(1);
-    let result = cache.insert(&msg);
-    assert!(result);
-
+    match Packet::decode_packet(buffer) {
+        Err(e) => assert!(false),
+        Ok(msg) => {
+            let mut cache = Cache::new(1);
+            let result = cache.insert(&msg);
+            assert!(result);
+        }
+    }
     // TODO: assert that the size increased by the length of the message and keyId/ContentId
 }
 
@@ -223,17 +226,21 @@ fn test_cache_lookup() {
     }
     let buffer = &file_contents[..];
 
-    let msg = Packet::decode_packet(buffer);
-
-    let mut cache = Cache::new(1);
-    let result = cache.insert(&msg);
-    assert!(result);
-
-    let lookup_result = cache.lookup(&msg);
-    match lookup_result {
-        Some(entry) => {},
-        None => assert!(false)
+    match Packet::decode_packet(buffer) {
+        Err(e) => assert!(false),
+        Ok(msg) => {
+            let mut cache = Cache::new(1);
+            let result = cache.insert(&msg);
+            assert!(result);
+            
+            let lookup_result = cache.lookup(&msg);
+            match lookup_result {
+                Some(entry) => {},
+                None => assert!(false)
+            }
+        }
     }
+
 }
 
 #[test]
@@ -255,15 +262,18 @@ fn test_cache_evict() {
     }
     let buffer = &file_contents[..];
 
-    let msg = Packet::decode_packet(buffer);
-
-    let mut cache = Cache::new(1);
-    let result = cache.insert(&msg);
-    assert!(result);
-
-    let evict_result = cache.evict(100);
-    match evict_result {
-        true => {},
-        false => assert!(false)
+    match Packet::decode_packet(buffer) {
+        Err(e) => assert!(false),
+        Ok(msg) => {
+            let mut cache = Cache::new(1);
+            let result = cache.insert(&msg);
+            assert!(result);
+    
+            let evict_result = cache.evict(100);
+            match evict_result {
+                true => {},
+                false => assert!(false)
+            }
+        }
     }
 }
