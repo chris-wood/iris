@@ -145,17 +145,18 @@ fn test_pit_insert() {
     let mut pit = PIT::new();
 
     // 1. decode the packet
-    let msg = Packet::decode_packet(buffer);
+    let msg = match Packet::decode_packet(buffer) {
+        Ok(msg) => {
+            let mut face = 5;
+            let mut result = pit.insert(&msg, face);
+            assert!(result == true);
 
-    // 2. insert the interest
-    let mut face = 5;
-    let mut result = pit.insert(&msg, face);
-    assert!(result == true);
-
-    // 3. try to insert yet another interest from a different face
-    face = 10;
-    result = pit.insert(&msg, face);
-    assert!(result == true);
+            // 3. try to insert yet another interest from a different face
+            face = 10;
+            result = pit.insert(&msg, face);
+            assert!(result == true);
+        }, Err(_) => assert!(false)
+    };
 }
 
 #[test]
@@ -179,7 +180,10 @@ fn test_pit_lookup() {
     let mut pit = PIT::new();
 
     // 1. decode the packet
-    let msg = Packet::decode_packet(buffer);
+    let msg = match Packet::decode_packet(buffer) {
+        Ok(msg) => msg,
+        Err(why) => panic!("couldn't open {}: {}", display, Error::description(&why))
+    };
 
     // 2. insert the interest
     let mut face = 5;
