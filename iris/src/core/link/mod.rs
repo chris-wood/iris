@@ -270,26 +270,30 @@ impl<'a,'b> Handler for LinkManager<'a,'b> {
 
                     match ingress_link.read() {
                         Some((buffer, length)) => {
-                            let msg = core::packet::decode_packet(&buffer[0..length]);
-                            match self.processor.process_message(&msg, link_id.as_usize()) {
-                                Ok((Some(output_message), output_ids)) => { // forward the message to every ID in the list
-                                    for link_id in output_ids {
-                                        println!("FORWARD TO ID {}", link_id);
-                                        let token = Token(link_id as usize);
+                            match core::packet::decode_packet(&buffer[0..length]) {
+                                Ok(msg) => {
+                                    match self.processor.process_message(&msg, link_id.as_usize()) {
+                                        Ok((Some(output_message), output_ids)) => { // forward the message to every ID in the list
+                                            for link_id in output_ids {
+                                                println!("FORWARD TO ID {}", link_id);
+                                                let token = Token(link_id as usize);
 
-                                        let sender = event_loop.channel();
-                                        let msg_copy = output_message.clone();
-                                        sender.send((token, msg_copy));
+                                                let sender = event_loop.channel();
+                                                let msg_copy = output_message.clone();
+                                                sender.send((token, msg_copy));
+                                            }
+                                        },
+                                        Ok((None, _)) => {
+                                            // pass
+                                        }
+                                        Err(e) => {
+                                            println!("Error: {:?}", e);
+                                            // pass
+                                        }
                                     }
                                 },
-                                Ok((None, _)) => {
-                                    // pass
-                                }
-                                Err(e) => {
-                                    println!("Error: {:?}", e);
-                                    // pass
-                                }
-                            }
+                                Err(_) => {},
+                            };
                         },
                         None => { /* pass */ }
                     };

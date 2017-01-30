@@ -2,7 +2,7 @@ use core::packet::decoder as decoder;
 use core::packet::message as message;
 
 pub enum DecoderError {
-    MalformedPacket,      
+    MalformedPacket,
 }
 
 // TODO: this should just be decode_tlv
@@ -132,8 +132,7 @@ fn decode_tlv_name_value(msg: &mut message::Message, slice: &[u8], plength: u16,
     }
 
     if target != offset {
-        println!("An error occurred!");
-        return -1;
+        return 0;
     }
 
     return target;

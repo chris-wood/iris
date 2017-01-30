@@ -182,7 +182,7 @@ fn test_pit_lookup() {
     // 1. decode the packet
     let msg = match Packet::decode_packet(buffer) {
         Ok(msg) => msg,
-        Err(why) => panic!("couldn't open {}: {}", display, Error::description(&why))
+        Err(why) => panic!("Failed to decode the packet"),
     };
 
     // 2. insert the interest
@@ -206,16 +206,19 @@ fn test_pit_lookup() {
     let data_buffer = &data_file_contents[..]; // take reference to the entire thing (i.e., a slice)nt flags = fcntl(fwd_state->fd, F_GETFL, NULL);
 
     // 3. decode the content object
-    let content = Packet::decode_packet(data_buffer);
-
-    // 4. lookup the conten object
-    let result = pit.lookup(&content);
-    match result {
-        Some(entry) => {
-            println!("Matched correctly!");
+    match Packet::decode_packet(data_buffer) {
+        Ok(content) => {
+            let result = pit.lookup(&content);
+            match result {
+                Some(entry) => {
+                    println!("Matched correctly!");
+                },
+                None => assert!(false)
+            };
         },
-        None => assert!(false)
-    };
+        Err(_) => panic!("Failed to decode a packet")
+    }
+
 }
 
 #[test]
@@ -237,7 +240,10 @@ fn test_pit_flush() {
 
     let mut pit = PIT::new();
 
-    let msg = Packet::decode_packet(buffer);
+    let msg = match Packet::decode_packet(buffer) {
+        Ok(msg) => msg,
+        Err(why) => panic!("Failed to decode the packet"),
+    };
 
     // Test flush first
     let pre_insert_result = pit.flush(&msg);

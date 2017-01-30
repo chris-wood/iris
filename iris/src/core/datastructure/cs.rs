@@ -195,7 +195,6 @@ fn test_cache_insert() {
     }
     let buffer = &file_contents[..];
 
-    let msg = Packet::decode_packet(buffer);
     match Packet::decode_packet(buffer) {
         Err(e) => assert!(false),
         Ok(msg) => {
@@ -232,7 +231,7 @@ fn test_cache_lookup() {
             let mut cache = Cache::new(1);
             let result = cache.insert(&msg);
             assert!(result);
-            
+
             let lookup_result = cache.lookup(&msg);
             match lookup_result {
                 Some(entry) => {},
@@ -268,7 +267,7 @@ fn test_cache_evict() {
             let mut cache = Cache::new(1);
             let result = cache.insert(&msg);
             assert!(result);
-    
+
             let evict_result = cache.evict(100);
             match evict_result {
                 true => {},
