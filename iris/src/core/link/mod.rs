@@ -9,8 +9,6 @@ use mio::udp::*;
 
 use mio::*;
 
-use bytes::{Buf, RingBuf, SliceBuf, MutBuf};
-
 use std::str;
 
 use core;
@@ -18,8 +16,6 @@ use core::packet;
 use core::Forwarder as Forwarder;
 use core::ForwarderResult as ForwarderResult;
 use core::ForwarderResponseResult as ForwarderResponseResult;
-use core::packet::message::Message as Message;
-use common::name::Name as Name;
 
 enum ControlMessageError {
     InvalidControlMessage
@@ -111,27 +107,27 @@ impl<'a,'b> LinkManager<'a,'b> {
         }
     }
 
-    fn get_link_id_by_name(&mut self, nick: &String) -> Option<&mut Token> {
-        return self.link_names.get_mut(nick);
-    }
-
-    fn get_link_by_id(&mut self, token: &Token) -> Option<&mut TCPLink> {
-        if self.links.contains_key(token) {
-            return self.links.get_mut(token);
-        }
-        return None;
-    }
+    // fn get_link_id_by_name(&mut self, nick: &String) -> Option<&mut Token> {
+    //     return self.link_names.get_mut(nick);
+    // }
+    //
+    // fn get_link_by_id(&mut self, token: &Token) -> Option<&mut TCPLink> {
+    //     if self.links.contains_key(token) {
+    //         return self.links.get_mut(token);
+    //     }
+    //     return None;
+    // }
 
     pub fn process_control(&mut self, event_loop: &mut EventLoop<LinkManager>, msg: String) -> Result<bool, ControlMessageError> {
-        let mut params: Vec<&str> = msg.trim().split(" ").collect();
+        let params: Vec<&str> = msg.trim().split(" ").collect();
 
-        let mut cmd = params[0];
+        let cmd = params[0];
         if cmd == "mk" {
-            let mut target = params[1];
+            let target = params[1];
             if target == "link" {
-                let mut nick = params[2];
-                let mut protocol = params[3];
-                let mut address = params[4];
+                let nick = params[2];
+                let protocol = params[3];
+                let address = params[4];
 
                 println!("{} {}", protocol, address);
                 if protocol == "udp" {
@@ -145,8 +141,8 @@ impl<'a,'b> LinkManager<'a,'b> {
                 }
             } else if target == "route" {
                 // mk route linkname <route ~~ lci:/foo/bar
-                let mut name = params[2];
-                let mut route = params[3];
+                let name = params[2];
+                let route = params[3];
 
                 println!("Adding a route for {} {}", name, route);
 

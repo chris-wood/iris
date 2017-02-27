@@ -6,15 +6,20 @@ use core::packet::message::Message as Message;
 #[derive(Debug)]
 pub struct CacheEntry {
     name: Name,
-    key_id_restriction: Vec<u8>,
-    content_id_restriction: Vec<u8>,
+    key_id: Vec<u8>,
+    content_id: Vec<u8>,
     data: Vec<u8>
 }
 
 impl CacheEntry {
     pub fn build_message(&self) -> Message {
-        let message = Message::new(&self.data[..]);
-        return message;
+        match Packet::decode_packet(&self.data) {
+            Ok(msg) => msg,
+            Err(e) => {
+                assert!(false, "We failed to rebuild a content object from a cached copy. This should never happen.");
+                Message::new(&[0])
+            }
+        }
     }
 }
 
@@ -75,11 +80,11 @@ impl Cache {
             if is_match {
                 match key_id {
                     Some ((o, l)) => {
-                        let length = entry.key_id_restriction.len();
+                        let length = entry.key_id.len();
                         if l == length {
                             let mut index = 0;
                             while index < l {
-                                if entry.key_id_restriction[index] != target.byte_at(o + index) {
+                                if entry.key_id[index] != target.byte_at(o + index) {
                                     is_match = false;
                                     break;
                                 }
@@ -95,11 +100,11 @@ impl Cache {
             if is_match {
                 match content_id {
                     Some ((o, l)) => {
-                        let length = entry.content_id_restriction.len();
+                        let length = entry.content_id.len();
                         if l == length {
                             let mut index = 0;
                             while index < l {
-                                if entry.content_id_restriction[index] != target.byte_at(o + index) {
+                                if entry.content_id[index] != target.byte_at(o + index) {
                                     is_match = false;
                                     break;
                                 }
@@ -134,6 +139,8 @@ impl Cache {
             self.evict(length);
         }
 
+        // XXX: perform signature verification here
+
         let bytes = target.bytes();
         let new_name = target.get_name();
 
@@ -161,8 +168,8 @@ impl Cache {
 
         let mut entry = CacheEntry {
             name: new_name,
-            key_id_restriction: key_id,
-            content_id_restriction: content_id,
+            key_id: key_id,
+            content_id: content_id,
             data: bytes
         };
         self.entries.push(entry);

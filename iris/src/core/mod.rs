@@ -12,8 +12,6 @@ use core::datastructure::cs as cs;
 use core::packet::message::Message as Message;
 use common::name::Name as Name;
 
-use common;
-
 #[derive(Debug)]
 pub enum ForwarderResult {
     CacheHit,
@@ -30,7 +28,6 @@ pub enum ForwarderResponseResult {
 pub enum ForwarderError {
     NoRouteInFib,
     NoMatchingPITEntry,
-    InternalError
 }
 
 pub struct Forwarder<'a> {
@@ -49,52 +46,41 @@ impl<'a> Forwarder<'a> {
     }
 
     pub fn add_route(&mut self, prefix: &Name, link_id: usize) {
-        let mut cloned = prefix.clone();
         self.fib.insert(prefix, link_id);
     }
 
     fn process_response(&mut self, msg: &Message, incoming_face: usize) -> Result<(ForwarderResponseResult, Vec<usize>), ForwarderError> {
-        let mut do_flush = false;
         let faces: Vec<usize>;
 
-        let pit_match = match self.pit.lookup_mut(msg) {
+        match self.pit.lookup_mut(msg) {
             Some((entry, index)) => {
                 faces = entry.get_faces();
-                do_flush = true;
             },
             None => {
                 return Err(ForwarderError::NoMatchingPITEntry);
             }
         };
 
-        if do_flush {
-            self.pit.flush(msg);
-            return Ok((ForwarderResponseResult::ForwardMessage, faces));
-        } else {
-            return Err(ForwarderError::InternalError);
-        }
+        self.pit.flush(msg);
+        return Ok((ForwarderResponseResult::ForwardMessage, faces));
     }
 
     fn process_interest<'b>(&mut self, msg: &'b Message, incoming_face: usize) -> Result<(ForwarderResult, Option<&'b Message>, Vec<usize>), ForwarderError> {
         let cs = &self.cs;
         let cs_match = match cs.lookup(msg) {
             Some(entry) => {
-                // TODO: this is incorrect.
-                let response = entry.build_message();
+                // XXX: need to return the actual cached result: entry.build_message()
                 return Ok((ForwarderResult::CacheHit, Some(msg), vec!(incoming_face)));
             },
             None => {
                 let pit = &mut self.pit;
 
-                let mut to_forward = false;
                 let mut to_collapse = false;
-                let pit_match = match pit.lookup(msg) {
-                    Some(entry) => {
+                match pit.lookup(msg) {
+                    Some(_) => {
                         to_collapse = true;
                     },
-                    None => {
-                        to_forward = true;
-                    }
+                    None => {}
                 };
 
                 if to_collapse {
@@ -102,21 +88,16 @@ impl<'a> Forwarder<'a> {
                     return Ok((ForwarderResult::PitHit, None, Vec::new()));
                 }
 
-                if to_forward {
-                    pit.insert(&msg, incoming_face);
-
-                    let fib = &self.fib;
-                    let fib_match = match fib.lookup(msg) {
-                        Some(entry) => {
-                            return Ok((ForwarderResult::ForwardMessage, Some(msg), entry.faces.clone()));
-                        },
-                        None => {
-                            return Err(ForwarderError::NoRouteInFib);
-                        }
-                    };
-                } else {
-                    return Ok((ForwarderResult::PitHit, None, vec!(incoming_face)));
-                }
+                let fib = &self.fib;
+                match fib.lookup(msg) {
+                    Some(entry) => {
+                        pit.insert(&msg, incoming_face);
+                        return Ok((ForwarderResult::ForwardMessage, Some(msg), entry.faces.clone()));
+                    },
+                    None => {
+                        return Err(ForwarderError::NoRouteInFib);
+                    }
+                };
             },
         };
     }

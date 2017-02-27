@@ -5,7 +5,6 @@ pub enum DecoderError {
     MalformedPacket,
 }
 
-// TODO: this should just be decode_tlv
 pub fn decode_packet_intro(slice: &[u8], mut offset: usize) -> Result<message::Message, DecoderError> {
 
     // Decode the fixed header
@@ -17,11 +16,10 @@ pub fn decode_packet_intro(slice: &[u8], mut offset: usize) -> Result<message::M
     let flags: u8 = decode_tlv_parse_one(slice, offset); offset += 1;
     let header_length: u8 = decode_tlv_parse_one(slice, offset); offset += 1;
 
-    // TODO: assertion is too strong. return none
+    // Sanity check on the length
     if slice.len() != (offset + plength as usize) {
         return Err(DecoderError::MalformedPacket)
     }
-    //assert!(slice.len() == (offset + plength as usize));
 
     let mut byteVector = Vec::new();
     for b in slice {
@@ -41,15 +39,19 @@ pub fn decode_packet_intro(slice: &[u8], mut offset: usize) -> Result<message::M
         payload_offset: 0,
         payload_length: 0,
         validation_offset: 0,
-        validation_length: 0
+        validation_length: 0,
+        validation_type: message::ValidationType::Invalid,
+        vdd_type: message::ValidationDependentDataType::Invalid,
     };
 
     if msg_type == (message::PacketType::ContentObject as u8) {
         msg.packet_type = message::PacketType::ContentObject;
     }
 
-    // TODO: create the message here
-    let mut consumed: usize = decode_tlv_toplevel(&mut msg, slice, plength, offset);
+    let consumed: usize = decode_tlv_toplevel(&mut msg, slice, plength, offset);
+    if consumed != slice.len() {
+        return Err(DecoderError::MalformedPacket)
+    }
 
     return Ok(msg);
 }
@@ -62,8 +64,33 @@ fn decode_tlv_parse_two(slice: &[u8], offset: usize) -> (u16) {
     return ((slice[offset] as u16) << 8) | (slice[offset + 1] as u16);
 }
 
+fn decode_tlv_validation_dependent_data(msg: &mut message::Message, slice: &[u8], plength: u16, mut offset: usize) -> (usize) {
+    let start_offset = offset;
+
+    // Parse the validation dependent data
+    let mut vdd_type: u16 = decode_tlv_parse_two(slice, offset); offset += 2;
+    let mut vdd_length: u16 = decode_tlv_parse_two(slice, offset); offset += 2;
+    msg.vdd_type = message::ParseValidationDependentDataType(vdd_type);
+
+    // XXX parse out the type of validator
+
+    return offset;
+}
+
 fn decode_tlv_validation_algorithm(msg: &mut message::Message, slice: &[u8], plength: u16, mut offset: usize) -> (usize) {
-    return 0;
+    let start_offset = offset;
+
+    // Parse the validation type
+    let mut val_type: u16 = decode_tlv_parse_two(slice, offset); offset += 2;
+    let mut val_length: u16 = decode_tlv_parse_two(slice, offset); offset += 2;
+    msg.validation_offset = start_offset;
+    msg.validation_length = val_length as usize;
+    msg.validation_type = message::ParseValidationType(val_type);
+
+    // Parse the validation dependent data
+    offset = decode_tlv_validation_dependent_data(msg, slice, val_length, offset);
+
+    return offset;
 }
 
 fn decode_tlv_validation_payload(msg: &mut message::Message, slice: &[u8], plength: u16, mut offset: usize) -> (usize) {
@@ -73,7 +100,7 @@ fn decode_tlv_validation_payload(msg: &mut message::Message, slice: &[u8], pleng
 fn decode_tlv_message(msg: &mut message::Message, slice: &[u8], plength: u16, mut offset: usize) -> (usize) {
     let start_offset = offset;
 
-    // The name is mandatory (NOT!)a
+    // The name is mandatory (NOT!)
     let mut next_type: u16 = decode_tlv_parse_two(slice, offset); offset += 2;
     let mut next_length: u16 = decode_tlv_parse_two(slice, offset); offset += 2;
     msg.name_length = next_length as usize;

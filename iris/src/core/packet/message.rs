@@ -52,22 +52,47 @@ enum ContentObjectMessageTLVType {
 }
 
 #[derive(PartialEq, Clone, Debug)]
-enum ValidationType {
+pub enum ValidationType {
     Crc32 = 0x0002,
     HmacSha256 = 0x0004,
     Vmac128 = 0x0005,
     RsaSha256 = 0x0006,
     EcSecp256K1 = 0x0007,
     EcSecp384R1 = 0x0008,
+    Invalid = 0xFFFF
+}
+
+pub fn ParseValidationType(val: u16) -> ValidationType {
+    match val {
+        0x0002 => ValidationType::Crc32,
+        0x0004 => ValidationType::HmacSha256,
+        0x0005 => ValidationType::Vmac128,
+        0x0006 => ValidationType::RsaSha256,
+        0x0007 => ValidationType::EcSecp256K1,
+        0x0008 => ValidationType::EcSecp384R1,
+        _      => ValidationType::Invalid
+    }
 }
 
 #[derive(PartialEq, Clone, Debug)]
-enum ValidationDependentDataType {
+pub enum ValidationDependentDataType {
     KeyId = 0x0009,
     PublicKey = 0x000B,
     Certificate = 0x000C,
     KeyName = 0x000E,
-    SignatureTime = 0x000F
+    SignatureTime = 0x000F,
+    Invalid = 0xFFFF
+}
+
+pub fn ParseValidationDependentDataType(val: u16) -> ValidationDependentDataType {
+    match val {
+        0x0009 => ValidationDependentDataType::KeyId,
+        0x000B => ValidationDependentDataType::PublicKey,
+        0x000C => ValidationDependentDataType::Certificate,
+        0x000E => ValidationDependentDataType::KeyName,
+        0x000F => ValidationDependentDataType::SignatureTime,
+        _      => ValidationDependentDataType::Invalid,
+    }
 }
 
 #[derive(Clone, Debug)]
@@ -84,19 +109,14 @@ pub struct Message {
     pub payload_offset: usize,
     pub payload_length: usize,
     pub validation_offset: usize,
-    pub validation_length: usize
+    pub validation_length: usize,
+
+    // Validation data
+    pub validation_type: ValidationType,
+    pub vdd_type: ValidationDependentDataType
 }
 
 impl Message {
-    // A public constructor
-    // pub fn new(bytes: &[u8]) -> Message {
-    //     let mut byteVector = Vec::new();
-    //     for b in bytes {
-    //         byteVector.push(*b);
-    //     }
-    //     return Message { message_bytes: byteVector };
-    // }
-
     pub fn new(bytes: &[u8]) -> Message {
         let mut byteVector = Vec::new();
         for b in bytes {
@@ -112,10 +132,12 @@ impl Message {
             content_id_offset: 0,
             content_id_length: 0,
             packet_type: PacketType::Interest,
-            payload_offset: 0, //new_payload_offset,
-            payload_length: 0, //new_payload_length,
-            validation_offset: 0, //new_validation_offset,
-            validation_length: 0, //new_validation_length,
+            payload_offset: 0,
+            payload_length: 0,
+            validation_offset: 0,
+            validation_length: 0,
+            validation_type: ValidationType::Invalid,
+            vdd_type: ValidationDependentDataType::Invalid,
         }
     }
 

@@ -10,10 +10,6 @@ use core::ForwarderResponseResult as ForwarderResponseResult;
 use core::packet::message::Message as Message;
 use common::name::Name as Name;
 
-use std::io;
-use std::io::prelude::*;
-use std::thread;
-
 pub struct Processor<'a> {
     fwd: Forwarder<'a>,
 }
@@ -48,15 +44,15 @@ impl<'a> Processor<'a> {
     // protocol == tcp or udp
     // mk route <name> <lci route> [cost]
     pub fn process_control(&mut self, msg: String) -> Result<bool, ProcessorError> {
-        let mut params: Vec<&str> = msg.trim().split(" ").collect();
+        let params: Vec<&str> = msg.trim().split(" ").collect();
 
-        let mut cmd = params[0];
+        let cmd = params[0];
         if cmd == "mk" {
-            let mut target = params[1];
+            let target = params[1];
             if target == "link" {
-                let mut nick = params[2];
-                let mut protocol = params[3];
-                let mut hostport = params[4];
+                let nick = params[2];
+                let protocol = params[3];
+                let hostport = params[4];
 
                 println!("{} {}", protocol, hostport);
                 if protocol == "udp" {
@@ -68,9 +64,9 @@ impl<'a> Processor<'a> {
                     return Err(ProcessorError::NotImplementedYet);
                 }
             } else if target == "route" {
-                let mut name = params[2];
-                let mut route = params[3];
-                let mut cost = params[4];
+                let name = params[2];
+                let route = params[3];
+                let cost = params[4];
 
                 return Err(ProcessorError::NotImplementedYet);
             } else if target == "listener" {
@@ -86,8 +82,7 @@ impl<'a> Processor<'a> {
     fn process_interest<'b>(&mut self, msg: &'b Message, incoming_face: usize) -> Result<(Option<&'b Message>, Vec<usize>), ProcessorError> {
         match self.fwd.process_interest(msg, incoming_face) {
             Ok((ForwarderResult::CacheHit, msg, ids)) => { // content, return it
-                let inner_msg = msg.unwrap();
-
+                // let inner_msg = msg.unwrap();
                 // TODO: finishme
 
                 return Err(ProcessorError::NotImplementedYet);
