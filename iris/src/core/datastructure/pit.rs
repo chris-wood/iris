@@ -9,13 +9,14 @@ use std::path::Path;
 use common::name::Name as Name;
 use core::packet::message::Message as Message;
 use core::packet as Packet;
+use core::datastructure::identifier;
 
 pub struct PITEntry {
-    name: Name,
-    keyIdRestriction: Vec<u8>,
-    hashRestriction: Vec<u8>,
-    arrival_faces: Vec<usize>, // make this mutable for its lifetime
-    lifetime: u32, // number of epochs
+    identifier: identifier::Identifier,
+
+    // XXX: this needs to be mutable
+    arrival_faces: Vec<usize>,
+    lifetime: u32,
 }
 
 impl PITEntry {
@@ -49,26 +50,26 @@ impl PIT {
         }
     }
 
-    pub fn lookup(&self, target: &Message) -> Option<&PITEntry> {
-        for entry in self.entries.iter() {
-            let target_name = target.get_name();
-            println!("Checking {} ", target_name);
-            if entry.name.equals(&target_name) {
-                // TODO: need to add missing checks for the key_id and content_id
-                return Some(entry);
-            }
-        }
+    // pub fn lookup(&self, target: &Message) -> Option<&PITEntry> {
+    //     for entry in self.entries.iter() {
+    //
+    //         let target_name = target.get_name();
+    //         println!("Checking {} ", target_name);
+    //         if entry.name.equals(&target_name) {
+    //             // TODO: need to add missing checks for the key_id and content_id
+    //             return Some(entry);
+    //         }
+    //     }
+    //
+    //     return None;
+    // }
 
-        return None;
-    }
-
-    pub fn lookup_mut(&mut self, target: &Message) -> Option<(&mut PITEntry, usize)> {
+    pub fn lookup(&mut self, target: &Message) -> Option<(&mut PITEntry, usize)> {
         let mut index: usize = 0;
+        // let target_identifier = target.identifier;
         for entry in self.entries.iter_mut() {
-            let target_name = target.get_name();
-            if entry.name.equals(&target_name) {
-                // TODO: need to add missing checks for the key_id and content_id
-                return Some((entry, index));
+            if entry.identifier.equals(&target.identifier) {
+                return Some((entry, index))
             }
             index = index + 1;
         }
@@ -80,7 +81,7 @@ impl PIT {
     // pub fn insert(&mut self, target: &Name, key_id_restr: &Vec<u8>, hash_restr: &Vec<u8>, new_face: usize) -> (bool) {
     pub fn insert(&mut self, target: &Message, new_face: usize) -> (bool) {
         let mut new_entry: Option<PITEntry> = None;
-        match self.lookup_mut(target) {
+        match self.lookup(target) {
             Some((entry, index)) => {
                 entry.arrival_faces.push(new_face);
                 return true;
@@ -88,9 +89,7 @@ impl PIT {
             None => {
                 let clone = target.clone();
                 let entry = PITEntry {
-                    name: clone.get_name(),
-                    keyIdRestriction: vec![],
-                    hashRestriction: vec![],
+                    identifier: target.identifier.clone(),
                     arrival_faces: vec![new_face],
                     lifetime: 10
                 };
@@ -110,7 +109,7 @@ impl PIT {
 
     pub fn flush(&mut self, target: &Message) -> (bool) {
         let mut target_index = 0;
-        match self.lookup_mut(target) {
+        match self.lookup(target) {
             Some((entry, index)) => {
                 target_index = index;
             },

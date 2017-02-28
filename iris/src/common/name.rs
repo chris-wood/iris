@@ -2,7 +2,7 @@ use std::fmt;
 use std::vec::Vec as Vec;
 use std::string::String as String;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Name {
     name_bytes: Vec<u8>,
     name_segment_offsets: Vec<(usize, usize)>
@@ -21,6 +21,12 @@ impl fmt::Display for Name {
 }
 
 impl Name {
+    pub fn empty() -> Name {
+        Name {
+            name_bytes: Vec::new(),
+            name_segment_offsets: Vec::new(),
+        }
+    }
     pub fn create_from_bytes(bytes: &Vec<u8>, name_segment_offsets: &Vec<(usize, usize)>) -> Option<Name> {
         let mut copy_bytes = Vec::new();
         let mut copy_offsets = Vec::new();

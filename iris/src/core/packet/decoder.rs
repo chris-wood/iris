@@ -1,5 +1,6 @@
 use core::packet::decoder as decoder;
 use core::packet::message as message;
+use core::datastructure::identifier;
 
 pub enum DecoderError {
     MalformedPacket,
@@ -42,6 +43,7 @@ pub fn decode_packet_intro(slice: &[u8], mut offset: usize) -> Result<message::M
         validation_length: 0,
         validation_type: message::ValidationType::Invalid,
         vdd_type: message::ValidationDependentDataType::Invalid,
+        identifier: identifier::Identifier::empty(),
     };
 
     if msg_type == (message::PacketType::ContentObject as u8) {
@@ -73,6 +75,14 @@ fn decode_tlv_validation_dependent_data(msg: &mut message::Message, slice: &[u8]
     msg.vdd_type = message::ParseValidationDependentDataType(vdd_type);
 
     // XXX parse out the type of validator
+    match msg.vdd_type {
+        message::ValidationDependentDataType::KeyId => println!("woo"),
+        message::ValidationDependentDataType::PublicKey => println!("woo"),
+        message::ValidationDependentDataType::Certificate => println!("woo"),
+        message::ValidationDependentDataType::KeyName => println!("woo"),
+        message::ValidationDependentDataType::SignatureTime => println!("woo"),
+        message::ValidationDependentDataType::Invalid => return 0
+    }
 
     return offset;
 }

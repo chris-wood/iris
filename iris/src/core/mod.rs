@@ -51,8 +51,9 @@ impl<'a> Forwarder<'a> {
 
     fn process_response(&mut self, msg: &Message, incoming_face: usize) -> Result<(ForwarderResponseResult, Vec<usize>), ForwarderError> {
         let faces: Vec<usize>;
+        let request: &Message;
 
-        match self.pit.lookup_mut(msg) {
+        match self.pit.lookup(msg) {
             Some((entry, index)) => {
                 faces = entry.get_faces();
             },
@@ -61,7 +62,11 @@ impl<'a> Forwarder<'a> {
             }
         };
 
+        // let request = entry.
+        // XXX: need to insert into the cache, and verify in the process
+
         self.pit.flush(msg);
+
         return Ok((ForwarderResponseResult::ForwardMessage, faces));
     }
 

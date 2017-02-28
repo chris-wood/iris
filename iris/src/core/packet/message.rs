@@ -3,6 +3,7 @@ use std::str;
 
 use common::name as name;
 use common::name::Name as Name;
+use core::datastructure::identifier;
 
 #[derive(PartialEq, Clone, Debug)]
 pub enum TopLevelType {
@@ -113,11 +114,14 @@ pub struct Message {
 
     // Validation data
     pub validation_type: ValidationType,
-    pub vdd_type: ValidationDependentDataType
+    pub vdd_type: ValidationDependentDataType,
+
+    pub identifier: identifier::Identifier,
 }
 
 impl Message {
     pub fn new(bytes: &[u8]) -> Message {
+
         let mut byteVector = Vec::new();
         for b in bytes {
             byteVector.push(*b);
@@ -138,6 +142,7 @@ impl Message {
             validation_length: 0,
             validation_type: ValidationType::Invalid,
             vdd_type: ValidationDependentDataType::Invalid,
+            identifier: identifier::Identifier::empty(),
         }
     }
 
