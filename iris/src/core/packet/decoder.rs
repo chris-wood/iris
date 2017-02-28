@@ -77,7 +77,9 @@ fn decode_tlv_validation_dependent_data(msg: &mut message::Message, slice: &[u8]
     // XXX parse out the type of validator
     match msg.vdd_type {
         message::ValidationDependentDataType::KeyId => println!("woo"),
-        message::ValidationDependentDataType::PublicKey => println!("woo"),
+        message::ValidationDependentDataType::PublicKey => {
+            println!("woo"),
+        }
         message::ValidationDependentDataType::Certificate => println!("woo"),
         message::ValidationDependentDataType::KeyName => println!("woo"),
         message::ValidationDependentDataType::SignatureTime => println!("woo"),

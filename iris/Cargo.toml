@@ -14,3 +14,4 @@ mio = { git = "https://github.com/carllerche/mio" }
 
 [dependencies]
 bytes = "0.3.0"
+ring = "0.7.1"
