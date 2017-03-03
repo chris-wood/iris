@@ -30,6 +30,9 @@ fn main() {
     let fwd = core::Forwarder::new(&mut fcs, &mut fpit, &mut ffib);
     let mut processor = core::processor::Processor::new(fwd);
 
+    // TODO(cawood): only process addresses here -- defer the construction of sockets to the manager
+    // TODO(cawood): rename LinkManager to Carrier or NIC or something..
+
     let default_tcp_listener = "127.0.0.1:9696".parse::<SocketAddr>().unwrap();
     let server_tcp_socket = TcpListener::bind(&default_tcp_listener).unwrap();
 

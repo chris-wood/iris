@@ -202,7 +202,7 @@ fn test_cache_insert() {
     }
     let buffer = &file_contents[..];
 
-    match Packet::decode_packet(buffer) {
+    match Packet::decode(buffer) {
         Err(e) => assert!(false),
         Ok(msg) => {
             let mut cache = Cache::new(1);

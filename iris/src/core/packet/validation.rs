@@ -58,7 +58,7 @@ impl Validation {
     }
 
     fn decode_vdd_key_public_key(vdd: &mut Validation, slice &[u8], mut offset: usize, length: usize) -> usize {
-        vdd.key_blob = 
+        vdd.key_blob =
         return 0
     }
 

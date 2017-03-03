@@ -10,7 +10,6 @@ use core::packet::typespace;
 #[derive(Clone, Debug)]
 pub struct Message {
     pub message_bytes: Vec<u8>,
-    pub packet_type: typespace::PacketType,
     pub name_offset: usize,
     pub name_segment_offsets: Vec<(usize, usize)>,
     pub key_id_offset: usize,
@@ -20,18 +19,23 @@ pub struct Message {
     pub name_length: usize,
     pub payload_offset: usize,
     pub payload_length: usize,
-    pub validation_offset: usize,
-    pub validation_length: usize,
-
-    // Validation data
-    // TODO(cawood): wrap up this information in its own validation struct
-    pub validation_type: typespace::ValidationType,
-    pub vdd_type: typespace::ValidationDependentDataType,
-
-    pub identifier: identifier::Identifier,
 }
 
 impl Message {
+    pub fn empty() -> Message {
+        return Message {
+            message_bytes: Vec::new(),
+            name_offset: 0,
+            name_segment_offsets: Vec::new(),
+            name_length: 0,
+            key_id_offset: 0,
+            key_id_length: 0,
+            content_id_offset: 0,
+            content_id_length: 0,
+            payload_offset: 0,
+            payload_length: 0,
+        }
+    }
     pub fn new(bytes: &[u8]) -> Message {
 
         let mut byteVector = Vec::new();
@@ -116,6 +120,87 @@ impl Message {
         println!("  payload_length = {}", self.payload_length);
         println!("  validation_offset = {}", self.validation_offset);
         println!("  validation_length = {}", self.validation_length);
+    }
+
+    fn decode_tlv_message(msg: &mut message::Message, slice: &[u8], plength: u16, mut offset: usize) -> (usize) {
+        let start_offset = offset;
+
+        // The name is mandatory (NOT!)
+        let mut next_type: u16 = decoder::read_u16(slice, offset); offset += 2;
+        let mut next_length: u16 = decoder::read_u16(slice, offset); offset += 2;
+        msg.name_length = next_length as usize;
+        msg.name_offset = offset;
+        if next_type == 0 {
+            offset = decode_tlv_name_value(msg, slice, next_length, offset);
+        }
+
+        // Check to see if we've reached the end of the packet
+        if (start_offset + (plength as usize)) == offset {
+            return offset;
+        }
+
+        // Check what's next
+        next_type = decoder::read_u16(slice, offset); offset += 2;
+        next_length = decoder::read_u16(slice, offset); offset += 2;
+        if next_type == 1 {
+            msg.payload_offset = offset - 4;
+            offset = decode_tlv_payload_value(slice, next_length, offset);
+            msg.payload_length = next_length as usize;
+        }
+
+        return offset;
+    }
+
+    fn decode_tlv_toplevel(msg: &mut message::Message, slice: &[u8], plength: u16, mut offset: usize) -> (usize) {
+        while offset < (plength as usize) {
+            let top_type: u16 = decoder::read_u16(slice, offset); offset += 2;
+            let top_length: u16 = decoder::read_u16(slice, offset); offset += 2;
+
+            if top_type == (typespace::TopLevelType::Interest as u16) {
+                offset = decode_tlv_message(msg, slice, top_length, offset);
+            } else if top_type == (typespace::TopLevelType::ContentObject as u16) {
+                offset = decode_tlv_message(msg, slice, top_length, offset);
+            } else if top_type == (typespace::TopLevelType::ValidationAlgorithm as u16) {
+                offset = decode_tlv_validation_algorithm(msg, slice, top_length, offset);
+            } else if top_type == (typespace::TopLevelType::ValidationPayload as u16) {
+                offset = decode_tlv_validation_payload(msg, slice, top_length, offset);
+            } else {
+                // TODO: throw exception!
+            }
+        }
+
+        return offset;
+    }
+
+    fn decode_tlv_name_value(msg: &mut message::Message, slice: &[u8], plength: u16,  mut offset: usize) -> (usize) {
+        let target: usize = (plength as usize) + offset;
+        while offset < target {
+            let name_segment_type: u16 = decoder::read_u16(slice, offset); offset += 2;
+            let name_segment_length: u16 = decoder::read_u16(slice, offset); offset += 2;
+            let name_segment_value: &[u8] = &slice[offset .. (offset + name_segment_length as usize)];
+
+            msg.name_segment_offsets.push((offset, name_segment_length as usize));
+            offset += name_segment_length as usize;
+        }
+
+        if target != offset {
+            return 0;
+        }
+
+        return target;
+    }
+
+    fn decode_tlv_payload_value(slice: &[u8], plength: u16,  mut offset: usize) -> (usize) {
+        let payload_value: &[u8] = &slice[offset .. (offset + plength as usize)];
+        return offset + (plength as usize);
+    }
+
+    fn decode_tlv_validation_payload_value(slice: &[u8], plength: u16,  mut offset: usize) -> (usize) {
+        return offset;
+    }
+
+    fn decode_tlv_validation_algorithm_value(slice: &[u8], plength: u16,  mut offset: usize) -> (usize) {
+        return offset;
     }
 }
 

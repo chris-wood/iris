@@ -8,9 +8,19 @@ pub enum TopLevelType {
 
 #[derive(PartialEq, Clone, Debug)]
 pub enum PacketType {
-    Interest = 0x0000,
-    ContentObject = 0x0001,
-    InterestReturn = 0x0002
+    Interest = 0x00,
+    ContentObject = 0x01,
+    InterestReturn = 0x02,
+    Invalid = 0xFF
+}
+
+pub fn ParsePacketType(val: u8) -> PacketType {
+    match val {
+        0x00 => PacketType::Interest,
+        0x01 => PacketType::ContentObject,
+        0x02 => PacketType::InterestReturn,
+        _    => PacketType::Invalid,
+    }
 }
 
 #[derive(PartialEq, Clone, Debug)]
