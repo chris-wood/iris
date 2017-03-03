@@ -13,9 +13,11 @@ use core::datastructure::cs as cs;
 use core::link;
 
 use mio::*;
-use std::net::SocketAddr;
-use mio::tcp::*;
-use mio::udp::*;
+use mio::tcp::TcpListener;
+use mio::udp::UdpSocket;
+
+use std::net::{SocketAddr};
+
 
 fn main() {
     // Create the default data structures
@@ -32,28 +34,35 @@ fn main() {
     let server_tcp_socket = TcpListener::bind(&default_tcp_listener).unwrap();
 
     let default_udp_listener = "127.0.0.1:9697".parse::<SocketAddr>().unwrap();
-    let server_udp_socket = UdpSocket::bound(&default_udp_listener).unwrap();
+    let server_udp_socket = UdpSocket::bind(&default_udp_listener).unwrap();
 
     let default_ctl_listener = "127.0.0.1:9698".parse::<SocketAddr>().unwrap();
-    let server_ctl_socket = UdpSocket::bound(&default_ctl_listener).unwrap();
+    let server_ctl_socket = UdpSocket::bind(&default_ctl_listener).unwrap();
 
-    let mut event_loop = EventLoop::new().unwrap();
-    event_loop.register(&server_tcp_socket,
-        Token(0),
-        EventSet::readable(),
-        PollOpt::edge()).unwrap();
+    let poll = Poll::new().unwrap();
+    poll.register(&server_tcp_socket, link::SERVER_TCP_TOKEN, Ready::readable(), PollOpt::edge()).unwrap();
+    poll.register(&server_udp_socket, link::SERVER_UDP_TOKEN, Ready::readable(), PollOpt::edge()).unwrap();
+    poll.register(&server_ctl_socket, link::SERVER_CTL_TOKEN, Ready::readable(), PollOpt::edge()).unwrap();
 
-    event_loop.register(&server_udp_socket,
-        Token(1),
-        EventSet::readable(),
-        PollOpt::edge()).unwrap();
+    // let mut event_loop = EventLoop::new().unwrap();
+    // event_loop.register(&server_tcp_socket,
+    //     Token(0),
+    //     EventSet::readable(),
+    //     PollOpt::edge()).unwrap();
+    //
+    // event_loop.register(&server_udp_socket,
+    //     Token(1),
+    //     EventSet::readable(),
+    //     PollOpt::edge()).unwrap();
+    //
+    // event_loop.register(&server_ctl_socket,
+    //     Token(2),
+    //     EventSet::readable(),
+    //     PollOpt::edge()).unwrap();
 
-    event_loop.register(&server_ctl_socket,
-        Token(2),
-        EventSet::readable(),
-        PollOpt::edge()).unwrap();
+    // let mut handler = link::LinkManager::new(server_tcp_socket, server_udp_socket, server_ctl_socket, &mut processor);
+    // event_loop.run(&mut handler).unwrap();
 
-    let mut handler = link::LinkManager::new(server_tcp_socket, server_udp_socket, server_ctl_socket, &mut processor);
-
-    event_loop.run(&mut handler).unwrap();
+    let mut handler = link::LinkManager::new(poll, server_tcp_socket, server_udp_socket, server_ctl_socket, &mut processor);
+    handler.service()
 }

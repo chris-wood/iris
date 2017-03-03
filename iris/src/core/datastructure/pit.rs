@@ -9,7 +9,7 @@ use std::path::Path;
 use common::name::Name as Name;
 use core::packet::message::Message as Message;
 use core::packet as Packet;
-use core::datastructure::identifier;
+use common::identifier;
 
 pub struct PITEntry {
     identifier: identifier::Identifier,

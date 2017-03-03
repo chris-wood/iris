@@ -116,9 +116,9 @@ impl<'a> Processor<'a> {
 
     pub fn process_message<'b>(&mut self, msg: &'b Message, incoming_face: usize) -> Result<(Option<&'b Message>, Vec<usize>), ProcessorError> {
         // TODO: wrap these up in state checker functions
-        if msg.packet_type == core::packet::message::PacketType::Interest {
+        if msg.packet_type == core::packet::typespace::PacketType::Interest {
             return self.process_interest(msg, incoming_face);
-        } else if msg.packet_type == core::packet::message::PacketType::ContentObject {
+        } else if msg.packet_type == core::packet::typespace::PacketType::ContentObject {
             return self.process_content(msg, incoming_face);
         } else {
             // TODO: interest return

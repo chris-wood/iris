@@ -1,9 +1,20 @@
 use core::packet::decoder as decoder;
 use core::packet::message as message;
-use core::datastructure::identifier;
+use core::packet::typespace as typespace;
+use common::identifier;
 
 pub enum DecoderError {
     MalformedPacket,
+}
+
+// TODO(cawood): rename these to "read_word" and "read_byte"
+
+pub fn decode_tlv_parse_one(slice: &[u8], offset: usize) -> (u8) {
+    return slice[offset] as u8;
+}
+
+pub fn decode_tlv_parse_two(slice: &[u8], offset: usize) -> (u16) {
+    return ((slice[offset] as u16) << 8) | (slice[offset + 1] as u16);
 }
 
 pub fn decode_packet_intro(slice: &[u8], mut offset: usize) -> Result<message::Message, DecoderError> {
@@ -29,7 +40,7 @@ pub fn decode_packet_intro(slice: &[u8], mut offset: usize) -> Result<message::M
 
     let mut msg = message::Message{
         message_bytes: byteVector,
-        packet_type: message::PacketType::Interest,
+        packet_type: typespace::PacketType::Interest,
         name_offset: 0,
         name_segment_offsets: Vec::new(),
         name_length: 0,
@@ -41,13 +52,13 @@ pub fn decode_packet_intro(slice: &[u8], mut offset: usize) -> Result<message::M
         payload_length: 0,
         validation_offset: 0,
         validation_length: 0,
-        validation_type: message::ValidationType::Invalid,
-        vdd_type: message::ValidationDependentDataType::Invalid,
+        validation_type: typespace::ValidationType::Invalid,
+        vdd_type: typespace::ValidationDependentDataType::Invalid,
         identifier: identifier::Identifier::empty(),
     };
 
-    if msg_type == (message::PacketType::ContentObject as u8) {
-        msg.packet_type = message::PacketType::ContentObject;
+    if msg_type == (typespace::PacketType::ContentObject as u8) {
+        msg.packet_type = typespace::PacketType::ContentObject;
     }
 
     let consumed: usize = decode_tlv_toplevel(&mut msg, slice, plength, offset);
@@ -58,36 +69,26 @@ pub fn decode_packet_intro(slice: &[u8], mut offset: usize) -> Result<message::M
     return Ok(msg);
 }
 
-fn decode_tlv_parse_one(slice: &[u8], offset: usize) -> (u8) {
-    return slice[offset] as u8;
-}
-
-fn decode_tlv_parse_two(slice: &[u8], offset: usize) -> (u16) {
-    return ((slice[offset] as u16) << 8) | (slice[offset + 1] as u16);
-}
-
-fn decode_tlv_validation_dependent_data(msg: &mut message::Message, slice: &[u8], plength: u16, mut offset: usize) -> (usize) {
-    let start_offset = offset;
-
-    // Parse the validation dependent data
-    let mut vdd_type: u16 = decode_tlv_parse_two(slice, offset); offset += 2;
-    let mut vdd_length: u16 = decode_tlv_parse_two(slice, offset); offset += 2;
-    msg.vdd_type = message::ParseValidationDependentDataType(vdd_type);
-
-    // XXX parse out the type of validator
-    match msg.vdd_type {
-        message::ValidationDependentDataType::KeyId => println!("woo"),
-        message::ValidationDependentDataType::PublicKey => {
-            println!("woo"),
-        }
-        message::ValidationDependentDataType::Certificate => println!("woo"),
-        message::ValidationDependentDataType::KeyName => println!("woo"),
-        message::ValidationDependentDataType::SignatureTime => println!("woo"),
-        message::ValidationDependentDataType::Invalid => return 0
-    }
-
-    return offset;
-}
+// fn decode_tlv_validation_dependent_data(msg: &mut message::Message, slice: &[u8], plength: u16, mut offset: usize) -> (usize) {
+//     let start_offset = offset;
+//
+//     // Parse the validation dependent data
+//     let mut vdd_type: u16 = decode_tlv_parse_two(slice, offset); offset += 2;
+//     let mut vdd_length: u16 = decode_tlv_parse_two(slice, offset); offset += 2;
+//     msg.vdd_type = typespace::ParseValidationDependentDataType(vdd_type);
+//
+//     // XXX parse out the type of validator
+//     match msg.vdd_type {
+//         message::ValidationDependentDataType::KeyId => println!("woo"),
+//         message::ValidationDependentDataType::PublicKey => println!("woo"),
+//         message::ValidationDependentDataType::Certificate => println!("woo"),
+//         message::ValidationDependentDataType::KeyName => println!("woo"),
+//         message::ValidationDependentDataType::SignatureTime => println!("woo"),
+//         message::ValidationDependentDataType::Invalid => return 0
+//     };
+//
+//     return offset;
+// }
 
 fn decode_tlv_validation_algorithm(msg: &mut message::Message, slice: &[u8], plength: u16, mut offset: usize) -> (usize) {
     let start_offset = offset;
@@ -97,10 +98,10 @@ fn decode_tlv_validation_algorithm(msg: &mut message::Message, slice: &[u8], ple
     let mut val_length: u16 = decode_tlv_parse_two(slice, offset); offset += 2;
     msg.validation_offset = start_offset;
     msg.validation_length = val_length as usize;
-    msg.validation_type = message::ParseValidationType(val_type);
+    msg.validation_type = typespace::ParseValidationType(val_type);
 
     // Parse the validation dependent data
-    offset = decode_tlv_validation_dependent_data(msg, slice, val_length, offset);
+    // XXX: decode the Validation algorithm
 
     return offset;
 }
@@ -143,13 +144,13 @@ fn decode_tlv_toplevel(msg: &mut message::Message, slice: &[u8], plength: u16, m
         let top_type: u16 = decode_tlv_parse_two(slice, offset); offset += 2;
         let top_length: u16 = decode_tlv_parse_two(slice, offset); offset += 2;
 
-        if top_type == (message::TopLevelType::Interest as u16) {
+        if top_type == (typespace::TopLevelType::Interest as u16) {
             offset = decode_tlv_message(msg, slice, top_length, offset);
-        } else if top_type == (message::TopLevelType::ContentObject as u16) {
+        } else if top_type == (typespace::TopLevelType::ContentObject as u16) {
             offset = decode_tlv_message(msg, slice, top_length, offset);
-        } else if top_type == (message::TopLevelType::ValidationAlgorithm as u16) {
+        } else if top_type == (typespace::TopLevelType::ValidationAlgorithm as u16) {
             offset = decode_tlv_validation_algorithm(msg, slice, top_length, offset);
-        } else if top_type == (message::TopLevelType::ValidationPayload as u16) {
+        } else if top_type == (typespace::TopLevelType::ValidationPayload as u16) {
             offset = decode_tlv_validation_payload(msg, slice, top_length, offset);
         } else {
             // TODO: throw exception!
