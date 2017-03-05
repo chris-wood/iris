@@ -11,34 +11,45 @@ pub struct Packet {
     message: message::Message,
     validation: validation::Validation,
     identifier: identifier::Identifier,
+    // XXX: create slots for the message hash and sensitive region hash
 }
 
 impl Packet {
-    fn new(bytes: &[u8], ptype: typespace::PacketType, msg: message::Message, val: validation::Validation) -> Packet {
-        // XXX: construct the identifier from the message and validation information
-        // XXX: need to pass the raw bytes into this function so they may be stored!
+    // fn new(bytes: &[u8], ptype: typespace::PacketType, msg: message::Message, val: validation::Validation) -> Packet {
+    //     // XXX: construct the identifier from the message and validation information
+    //     // XXX: need to pass the raw bytes into this function so they may be stored!
+    //
+        // Packet {
+        //     bytes: bytes.to_vec(),
+        //     ptype: ptype,
+        //     message: msg,
+        //     validation: val,
+        //     identifier: ident,
+        // }
+    // }
 
+    fn wrap(bytes: &[u8]) -> Packet {
         Packet {
             bytes: bytes.to_vec(),
-            ptype: ptype,
-            message: msg,
-            validation: val,
-            identifier: ident,
+            ptype: typespace::PacketType::Interest,
+            message: message::Message::empty(),
+            validation: validation::Validation::empty(),
+            identifier: identifier::Identifier::empty(),
         }
     }
 
     pub fn decode(slice: &[u8], mut offset: usize) -> Result<Packet, decoder::DecoderError> {
         // Simple bounds check
         if slice.len() < 8 {
-            Err(decoder::DecoderError::MalformedPacket)
+            return Err(decoder::DecoderError::MalformedPacket);
         }
 
         // Decode the version and packet type
         let version: u8 = decoder::read_u8(slice, offset); offset += 1;
-        let ptype: u8 = decoder::read_u8(slice, offset); offset += 1;
+        let packet_type: u8 = decoder::read_u8(slice, offset); offset += 1;
 
         // Only proceed if we have a valid packet type
-        match ParsePacketType(packet_type) {
+        match typespace::ParsePacketType(packet_type) {
             typespace::PacketType::Invalid => Err(decoder::DecoderError::MalformedPacket),
             ptype => {
                 // Parse out the header
@@ -50,45 +61,52 @@ impl Packet {
 
                 // Sanity check on the length
                 if slice.len() != (offset + plength as usize) {
-                    return Err(DecoderError::MalformedPacket)
+                    return Err(decoder::DecoderError::MalformedPacket)
                 }
+
+                // Create the empty packet
+                let mut packet = Packet::wrap(slice);
+                packet.ptype = typespace::ParsePacketType(packet_type);
 
                 // Loop while haven't decoded the entire thing
                 while offset < plength as usize {
-                    // XXX: invoke the decode function
-                    let consumed: usize = decode_tlv_toplevel(&mut msg, slice, plength, offset);
+                    match packet.decode_tlv_toplevel(slice, plength, offset) {
+                        Ok(n) => offset = offset + n,
+                        Err(e) => return Err(e),
+                    }
                 }
+
 
                 // If we've run over the packet length, fail out
                 if offset > plength as usize {
-                    Err(decoder::DecoderError::MalformedPacket)
+                    return Err(decoder::DecoderError::MalformedPacket);
                 }
 
-                // XXX: return the message
-                Ok(Packet::new(ptype, msg, val, ident))
+                return Ok(packet);
             }
         }
     }
 
-    fn decode_tlv_toplevel(&mut self, slice: &[u8], plength: u16, mut offset: usize) -> (usize) {
+    fn decode_tlv_toplevel(&mut self, slice: &[u8], plength: u16, mut offset: usize) -> Result<usize, DecoderError> {
         while offset < (plength as usize) {
             let top_type: u16 = decoder::read_u16(slice, offset); offset += 2;
             let top_length: u16 = decoder::read_u16(slice, offset); offset += 2;
+            offset += top_length;
 
             if top_type == (typespace::TopLevelType::Interest as u16) {
                 match message::Message::decode(slice, top_length, offset) {
-                    Ok(msg) => self.message = msg,
-                    Err(_) => return 0
+                    Ok(msg) => { self.message = msg },
+                    Err(e) => return Err(e)
                 }
             } else if top_type == (typespace::TopLevelType::ContentObject as u16) {
                 match message::Message::decode(slice, top_length, offset) {
-                    Ok(msg) => self.message = msg,
-                    Err(_) => return 0
+                    Ok(msg) => { self.message = msg },
+                    Err(e) => return Err(e)
                 }
             } else if top_type == (typespace::TopLevelType::ValidationAlgorithm as u16) {
                 match validation::Validation::decode(slice, top_length, offset) {
                     Ok(validation) => self.validation = validation,
-                    Err(_) => 0
+                    Err(e) => return Err(e)
                 }
             } else if top_type == (typespace::TopLevelType::ValidationPayload as u16) {
                 // offset = decode_tlv_validation_payload(self.validation_payload, slice, top_length, offset);
@@ -97,10 +115,10 @@ impl Packet {
                 //     Err(_) => 0
                 // }
             } else {
-                // TODO: throw exception!
+                // Swallow this unknown TLV and continue onwards
             }
         }
 
-        return offset;
+        return Ok(offset)
     }
 }

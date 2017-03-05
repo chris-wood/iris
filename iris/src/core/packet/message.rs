@@ -118,13 +118,13 @@ impl Message {
     pub fn new(message_bytes: &[u8]) -> Result<Message, decoder::DecoderError> {
         let mut msg = Message::empty();
         let offset = msg.decode(message_bytes, message_bytes.len(), 0);
-        match offset {
-            message_bytes.len() =>  Ok(msg),
+        match message_bytes.len() {
+            offset =>  Ok(msg),
             _ => Err(decoder::DecoderError::MalformedPacket)
         }
     }
 
-    pub fn decode(slice: &[u8], plength: u16, mut offset: usize) -> Result<Message, decoder::DecoderError> {
+    pub fn decode(slice: &[u8], length: u16, mut offset: usize) -> Result<Message, decoder::DecoderError> {
         let mut msg = Message::empty();
 
         let start_offset = offset;
@@ -139,7 +139,7 @@ impl Message {
         }
 
         // Check to see if we've reached the end of the packet
-        if (start_offset + (plength as usize)) == offset {
+        if (start_offset + (length as usize)) == offset {
             return Ok(msg)
         }
 
