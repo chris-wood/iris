@@ -38,26 +38,6 @@ impl Message {
         }
     }
 
-    // pub fn new(bytes: &[u8]) -> Message {
-    //
-    //     let mut byteVector = Vec::new();
-    //     for b in bytes {
-    //         byteVector.push(*b);
-    //     }
-    //     return Message {
-    //         message_bytes: byteVector,
-    //         name_offset: 0,
-    //         name_segment_offsets: Vec::new(),
-    //         name_length: 0,
-    //         key_id_offset: 0,
-    //         key_id_length: 0,
-    //         content_id_offset: 0,
-    //         content_id_length: 0,
-    //         payload_offset: 0,
-    //         payload_length: 0,
-    //     }
-    // }
-
     pub fn bytes(&self) -> Vec<u8> {
         return self.message_bytes.clone()
     }
@@ -103,14 +83,6 @@ impl Message {
         }
 
         return Name::create_from_bytes(&name_bytes, &name_segment_offsets).unwrap();
-    }
-
-    pub fn print(self) {
-        println!("Message Details:");
-        println!("  name_offset = {}", self.name_offset);
-        println!("  name_length = {}", self.name_length);
-        println!("  payload_offset = {}", self.payload_offset);
-        println!("  payload_length = {}", self.payload_length);
     }
 
     pub fn new(message_bytes: &[u8]) -> Result<Message, decoder::DecoderError> {

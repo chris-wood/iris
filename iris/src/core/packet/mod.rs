@@ -21,18 +21,6 @@ pub struct Packet {
 }
 
 impl Packet {
-    // fn new(bytes: &[u8], packet_type: typespace::PacketType, msg: message::Message, val: validation::Validation) -> Packet {
-    //     // XXX: construct the identifier from the message and validation information
-    //     // XXX: need to pass the raw bytes into this function so they may be stored!
-    //
-        // Packet {
-        //     bytes: bytes.to_vec(),
-        //     packet_type: packet_type,
-        //     message: msg,
-        //     validation: val,
-        //     identifier: ident,
-        // }
-    // }
 
     // XXX: restrict the lifetime to prevent clones
     pub fn name(&self) -> name::Name {
@@ -91,7 +79,6 @@ impl Packet {
                     }
                 }
 
-
                 // If we've run over the packet length, fail out
                 if offset > plength as usize {
                     return Err(decoder::DecoderError::MalformedPacket);
@@ -124,11 +111,7 @@ impl Packet {
                     Err(e) => return Err(e)
                 }
             } else if top_type == (typespace::TopLevelType::ValidationPayload as u16) {
-                // offset = decode_tlv_validation_payload(self.validation_payload, slice, top_length, offset);
-                // match validation::decode(slice, top_length, offset) {
-                //     Ok(validation) => self.validation = validation,
-                //     Err(_) => 0
-                // }
+                // TODO(caw): decode the validation payload and store it
             } else {
                 // Swallow this unknown TLV and continue onwards
             }

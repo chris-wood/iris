@@ -28,41 +28,12 @@ pub struct PIT {
     entries: Vec<PITEntry>
 }
 
-// fn compare_vectors(x: &Vec<u8>, y: &Vec<u8>) -> (bool) {
-//     if x.len() == y.len() {
-//         let mut index = 0;
-//         while index < x.len() {
-//             if x[index] != y[index] {
-//                 return false;
-//             }
-//             index = index + 1;
-//         }
-//         return true;
-//     }
-//     return false;
-// }
-
 impl PIT {
     pub fn new() -> PIT {
         PIT {
             entries: Vec::new()
         }
     }
-
-    // pub fn lookup(&self, target: &Packet) -> Option<&PITEntry> {
-    //     for entry in self.entries.iter() {
-    //
-    //         let target_name = target.get_name();
-    //         println!("Checking {} ", target_name);
-    //         if entry.name.equals(&target_name) {
-    //             // TODO: need to add missing checks for the key_id and content_id
-    //             return Some(entry);
-    //         }
-    //     }
-    //
-    //     return None;
-    // }
-
     pub fn lookup(&mut self, target: &Packet) -> Option<(&mut PITEntry, usize)> {
         let mut index: usize = 0;
         // let target_identifier = target.identifier;

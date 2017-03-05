@@ -29,6 +29,6 @@ impl Hash {
 
 #[test]
 fn test_hash_constructor() {
-    // TODO: create an interest with ccn-lite and then use that output to test here
+    // TODO(caw): create an interest with ccn-lite and then use that output to test here
     assert!(true);
 }

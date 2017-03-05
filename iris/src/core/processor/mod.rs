@@ -83,8 +83,7 @@ impl<'a> Processor<'a> {
         match self.fwd.process_interest(msg, incoming_face) {
             Ok((ForwarderResult::CacheHit, msg, ids)) => { // content, return it
                 // let inner_msg = msg.unwrap();
-                // TODO: finishme
-
+                // TODO(caw): finishme
                 return Err(ProcessorError::NotImplementedYet);
             },
             Ok((ForwarderResult::PitHit, _, _)) => { // do nothing, this is OK

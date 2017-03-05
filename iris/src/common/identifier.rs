@@ -27,7 +27,7 @@ impl Identifier {
 
     pub fn equals(&self, other: &Identifier) -> bool {
         if self.name.equals(&other.name) {
-            // XXX: compare the key ID and content ID
+            // TODO(caw): compare the key ID and content ID
             return true
         }
         return false;
