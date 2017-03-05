@@ -6,6 +6,7 @@ use common::name::Name as Name;
 use common::identifier;
 
 use core::packet::typespace;
+use core::packet::decoder;
 
 #[derive(Clone, Debug)]
 pub struct Message {
@@ -36,31 +37,26 @@ impl Message {
             payload_length: 0,
         }
     }
-    pub fn new(bytes: &[u8]) -> Message {
 
-        let mut byteVector = Vec::new();
-        for b in bytes {
-            byteVector.push(*b);
-        }
-        return Message {
-            message_bytes: byteVector,
-            name_offset: 0,
-            name_segment_offsets: Vec::new(),
-            name_length: 0,
-            key_id_offset: 0,
-            key_id_length: 0,
-            content_id_offset: 0,
-            content_id_length: 0,
-            packet_type: typespace::PacketType::Interest,
-            payload_offset: 0,
-            payload_length: 0,
-            validation_offset: 0,
-            validation_length: 0,
-            validation_type: typespace::ValidationType::Invalid,
-            vdd_type: typespace::ValidationDependentDataType::Invalid,
-            identifier: identifier::Identifier::empty(),
-        }
-    }
+    // pub fn new(bytes: &[u8]) -> Message {
+    //
+    //     let mut byteVector = Vec::new();
+    //     for b in bytes {
+    //         byteVector.push(*b);
+    //     }
+    //     return Message {
+    //         message_bytes: byteVector,
+    //         name_offset: 0,
+    //         name_segment_offsets: Vec::new(),
+    //         name_length: 0,
+    //         key_id_offset: 0,
+    //         key_id_length: 0,
+    //         content_id_offset: 0,
+    //         content_id_length: 0,
+    //         payload_offset: 0,
+    //         payload_length: 0,
+    //     }
+    // }
 
     pub fn bytes(&self) -> Vec<u8> {
         return self.message_bytes.clone()
@@ -112,17 +108,25 @@ impl Message {
     // TODO: isControl, isInterest, isContentObject
 
     pub fn print(self) {
-        println!("Packet Details:");
-        println!("  packet_type = {}", self.packet_type as usize);
+        println!("Message Details:");
         println!("  name_offset = {}", self.name_offset);
         println!("  name_length = {}", self.name_length);
         println!("  payload_offset = {}", self.payload_offset);
         println!("  payload_length = {}", self.payload_length);
-        println!("  validation_offset = {}", self.validation_offset);
-        println!("  validation_length = {}", self.validation_length);
     }
 
-    fn decode_tlv_message(msg: &mut message::Message, slice: &[u8], plength: u16, mut offset: usize) -> (usize) {
+    pub fn new(message_bytes: &[u8]) -> Result<Message, decoder::DecoderError> {
+        let mut msg = Message::empty();
+        let offset = msg.decode(message_bytes, message_bytes.len(), 0);
+        match offset {
+            message_bytes.len() =>  Ok(msg),
+            _ => Err(decoder::DecoderError::MalformedPacket)
+        }
+    }
+
+    pub fn decode(slice: &[u8], plength: u16, mut offset: usize) -> Result<Message, decoder::DecoderError> {
+        let mut msg = Message::empty();
+
         let start_offset = offset;
 
         // The name is mandatory (NOT!)
@@ -131,12 +135,12 @@ impl Message {
         msg.name_length = next_length as usize;
         msg.name_offset = offset;
         if next_type == 0 {
-            offset = decode_tlv_name_value(msg, slice, next_length, offset);
+            offset = msg.decode_tlv_name_value(slice, next_length, offset);
         }
 
         // Check to see if we've reached the end of the packet
         if (start_offset + (plength as usize)) == offset {
-            return offset;
+            return Ok(msg)
         }
 
         // Check what's next
@@ -144,42 +148,21 @@ impl Message {
         next_length = decoder::read_u16(slice, offset); offset += 2;
         if next_type == 1 {
             msg.payload_offset = offset - 4;
-            offset = decode_tlv_payload_value(slice, next_length, offset);
+            offset = msg.decode_tlv_payload_value(slice, next_length, offset);
             msg.payload_length = next_length as usize;
         }
 
-        return offset;
+        return Ok(msg)
     }
 
-    fn decode_tlv_toplevel(msg: &mut message::Message, slice: &[u8], plength: u16, mut offset: usize) -> (usize) {
-        while offset < (plength as usize) {
-            let top_type: u16 = decoder::read_u16(slice, offset); offset += 2;
-            let top_length: u16 = decoder::read_u16(slice, offset); offset += 2;
-
-            if top_type == (typespace::TopLevelType::Interest as u16) {
-                offset = decode_tlv_message(msg, slice, top_length, offset);
-            } else if top_type == (typespace::TopLevelType::ContentObject as u16) {
-                offset = decode_tlv_message(msg, slice, top_length, offset);
-            } else if top_type == (typespace::TopLevelType::ValidationAlgorithm as u16) {
-                offset = decode_tlv_validation_algorithm(msg, slice, top_length, offset);
-            } else if top_type == (typespace::TopLevelType::ValidationPayload as u16) {
-                offset = decode_tlv_validation_payload(msg, slice, top_length, offset);
-            } else {
-                // TODO: throw exception!
-            }
-        }
-
-        return offset;
-    }
-
-    fn decode_tlv_name_value(msg: &mut message::Message, slice: &[u8], plength: u16,  mut offset: usize) -> (usize) {
+    fn decode_tlv_name_value(&mut self, slice: &[u8], plength: u16,  mut offset: usize) -> (usize) {
         let target: usize = (plength as usize) + offset;
         while offset < target {
             let name_segment_type: u16 = decoder::read_u16(slice, offset); offset += 2;
             let name_segment_length: u16 = decoder::read_u16(slice, offset); offset += 2;
             let name_segment_value: &[u8] = &slice[offset .. (offset + name_segment_length as usize)];
 
-            msg.name_segment_offsets.push((offset, name_segment_length as usize));
+            self.name_segment_offsets.push((offset, name_segment_length as usize));
             offset += name_segment_length as usize;
         }
 
@@ -190,17 +173,9 @@ impl Message {
         return target;
     }
 
-    fn decode_tlv_payload_value(slice: &[u8], plength: u16,  mut offset: usize) -> (usize) {
+    fn decode_tlv_payload_value(&mut self, slice: &[u8], plength: u16,  mut offset: usize) -> (usize) {
         let payload_value: &[u8] = &slice[offset .. (offset + plength as usize)];
         return offset + (plength as usize);
-    }
-
-    fn decode_tlv_validation_payload_value(slice: &[u8], plength: u16,  mut offset: usize) -> (usize) {
-        return offset;
-    }
-
-    fn decode_tlv_validation_algorithm_value(slice: &[u8], plength: u16,  mut offset: usize) -> (usize) {
-        return offset;
     }
 }
 

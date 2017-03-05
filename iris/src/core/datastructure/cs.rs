@@ -17,7 +17,7 @@ impl CacheEntry {
             Ok(msg) => msg,
             Err(e) => {
                 assert!(false, "We failed to rebuild a content object from a cached copy. This should never happen.");
-                Message::new(&[0])
+                Message::empty()
             }
         }
     }
