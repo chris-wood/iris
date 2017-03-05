@@ -1,25 +1,17 @@
 use std::vec;
 use common::name::Name as Name;
-use core::packet as Packet;
-use core::packet::message::Message as Message;
+use common::identifier::Identifier as Identifier;
+use core::packet::Packet as Packet;
 
 #[derive(Debug)]
 pub struct CacheEntry {
-    name: Name,
-    key_id: Vec<u8>,
-    content_id: Vec<u8>,
-    data: Vec<u8>
+    identifier: Identifier,
+    packet: Packet,
 }
 
 impl CacheEntry {
-    pub fn build_message(&self) -> Message {
-        match Packet::decode_packet(&self.data) {
-            Ok(msg) => msg,
-            Err(e) => {
-                assert!(false, "We failed to rebuild a content object from a cached copy. This should never happen.");
-                Message::empty()
-            }
-        }
+    pub fn build_Packet(&self) -> Packet {
+        return self.packet.clone();
     }
 }
 
@@ -27,33 +19,6 @@ impl CacheEntry {
 pub struct Cache {
     size: usize,
     entries: Vec<CacheEntry>
-}
-
-fn compare_vectors(x: &Vec<u8>, y: &Vec<u8>) -> (bool) {
-    if x.len() == y.len() {
-        let mut index = 0;
-        while index < x.len() {
-            if x[index] != y[index] {
-                return false;
-            }
-            index = index + 1;
-        }
-        return true;
-    }
-    return false;
-}
-
-#[test]
-fn test_compare_vectors() {
-    let mut vec1: Vec<u8> = Vec::new();
-    let mut vec2: Vec<u8> = Vec::new();
-
-    for x in 0..128 {
-        vec1.push(x);
-        vec2.push(x);
-    }
-
-    assert!(compare_vectors(&vec1, &vec2));
 }
 
 impl Cache {
@@ -64,64 +29,12 @@ impl Cache {
         }
     }
 
-    pub fn lookup(&self, target: &Message) -> Option<&CacheEntry> {
-        // Extract the request key parameters
-        let name = target.get_name();
-        let key_id = target.get_key_id_overlay();
-        let content_id = target.get_key_id_overlay();
-
+    pub fn lookup(&self, target: &Packet) -> Option<&CacheEntry> {
         for entry in self.entries.iter() {
-            let mut is_match = true;
-            if !entry.name.equals(&name) {
-                is_match = false;
-            }
-
-            // TODO: move to funcion.
-            if is_match {
-                match key_id {
-                    Some ((o, l)) => {
-                        let length = entry.key_id.len();
-                        if l == length {
-                            let mut index = 0;
-                            while index < l {
-                                if entry.key_id[index] != target.byte_at(o + index) {
-                                    is_match = false;
-                                    break;
-                                }
-                                index = index + 1;
-                            }
-                        } else {
-                            is_match = false;
-                        }
-                    }, None => {}
-                }
-            }
-
-            if is_match {
-                match content_id {
-                    Some ((o, l)) => {
-                        let length = entry.content_id.len();
-                        if l == length {
-                            let mut index = 0;
-                            while index < l {
-                                if entry.content_id[index] != target.byte_at(o + index) {
-                                    is_match = false;
-                                    break;
-                                }
-                                index = index + 1;
-                            }
-                        } else {
-                            is_match = false;
-                        }
-                    }, None => {}
-                }
-            }
-
-            if is_match {
+            if entry.identifier.equals(&target.identifier) {
                 return Some(entry);
             }
         }
-
         return None;
     }
 
@@ -133,47 +46,19 @@ impl Cache {
         return true;
     }
 
-    pub fn insert(&mut self, target: &Message) -> (bool) {
+    pub fn insert(&mut self, target: &Packet) -> (bool) {
         let length = target.size();
         if length >= self.size {
             self.evict(length);
         }
 
-        // XXX: perform signature verification here
-
-        let bytes = target.bytes();
-        let new_name = target.get_name();
-
-        let mut key_id = Vec::new();
-        match target.get_key_id_overlay() {
-            Some ((o, l)) => {
-                let mut index = o;
-                while index < l {
-                    key_id.push(bytes[index]);
-                    index = index + 1;
-                }
-            }, None => {}
-        }
-
-        let mut content_id = Vec::new();
-        match target.get_key_id_overlay() {
-            Some ((o, l)) => {
-                let mut index = o;
-                while index < l {
-                    content_id.push(bytes[index]);
-                    index = index + 1;
-                }
-            }, None => {}
-        }
-
         let mut entry = CacheEntry {
-            name: new_name,
-            key_id: key_id,
-            content_id: content_id,
-            data: bytes
+            identifier: target.identifier.clone(),
+            packet: target.clone()
         };
+
         self.entries.push(entry);
-        self.size = self.size + length;
+        self.size = self.size + target.size();
 
         return true;
     }
@@ -202,7 +87,7 @@ fn test_cache_insert() {
     }
     let buffer = &file_contents[..];
 
-    match Packet::decode(buffer) {
+    match Packet::decode(buffer, 0) {
         Err(e) => assert!(false),
         Ok(msg) => {
             let mut cache = Cache::new(1);
@@ -210,7 +95,7 @@ fn test_cache_insert() {
             assert!(result);
         }
     }
-    // TODO: assert that the size increased by the length of the message and keyId/ContentId
+    // TODO: assert that the size increased by the length of the Packet and keyId/ContentId
 }
 
 #[test]
@@ -232,7 +117,7 @@ fn test_cache_lookup() {
     }
     let buffer = &file_contents[..];
 
-    match Packet::decode_packet(buffer) {
+    match Packet::decode(buffer, 0) {
         Err(e) => assert!(false),
         Ok(msg) => {
             let mut cache = Cache::new(1);
@@ -268,7 +153,7 @@ fn test_cache_evict() {
     }
     let buffer = &file_contents[..];
 
-    match Packet::decode_packet(buffer) {
+    match Packet::decode(buffer, 0) {
         Err(e) => assert!(false),
         Ok(msg) => {
             let mut cache = Cache::new(1);

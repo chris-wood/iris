@@ -1,7 +1,7 @@
 use std::vec;
 use std::fmt;
 use common::name::Name as Name;
-use core::packet::message::Message as Message;
+use core::packet::Packet as Packet;
 
 pub struct FIBEntry {
     name: Name,
@@ -31,8 +31,8 @@ impl FIB {
         }
     }
 
-    pub fn lookup(&self, target: &Message) -> Option<&FIBEntry> {
-        let mut name = target.get_name();
+    pub fn lookup(&self, target: &Packet) -> Option<&FIBEntry> {
+        let mut name = target.name();
         return self.lookup_by_name(&mut name);
     }
 

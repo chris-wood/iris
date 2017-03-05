@@ -105,8 +105,6 @@ impl Message {
         return Name::create_from_bytes(&name_bytes, &name_segment_offsets).unwrap();
     }
 
-    // TODO: isControl, isInterest, isContentObject
-
     pub fn print(self) {
         println!("Message Details:");
         println!("  name_offset = {}", self.name_offset);
@@ -116,10 +114,8 @@ impl Message {
     }
 
     pub fn new(message_bytes: &[u8]) -> Result<Message, decoder::DecoderError> {
-        let mut msg = Message::empty();
-        let offset = msg.decode(message_bytes, message_bytes.len(), 0);
-        match message_bytes.len() {
-            offset =>  Ok(msg),
+        match Message::decode(message_bytes, message_bytes.len() as u16, 0) {
+            Ok(msg) => Ok(msg),
             _ => Err(decoder::DecoderError::MalformedPacket)
         }
     }

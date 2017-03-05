@@ -16,6 +16,16 @@ pub struct Validation {
 }
 
 impl Validation {
+    pub fn empty() -> Validation {
+        Validation {
+            validation_type: typespace::ValidationType::Invalid,
+            key_blob: Vec::new(),
+            cert_blob: Vec::new(),
+            key_id: identifier::Identifier::empty(),
+            sig_time: 0,
+        }
+    }
+
     pub fn decode(slice: &[u8], length: u16, mut offset: usize) -> Result<Validation, decoder::DecoderError> {
         let mut vdd = Validation {
             validation_type: typespace::ValidationType::Invalid,
@@ -32,15 +42,15 @@ impl Validation {
         while offset < val_length as usize && offset < length as usize {
             offset = vdd.decode_vdd_type(slice, offset);
             if offset == 0 {
-                Err(decoder::DecoderError::MalformedPacket)
+                return Err(decoder::DecoderError::MalformedPacket);
             }
         }
 
         if offset > length as usize {
-            Err(decoder::DecoderError::MalformedPacket)
+            return Err(decoder::DecoderError::MalformedPacket);
         }
 
-        Ok(vdd)
+        return Ok(vdd);
     }
 
     fn decode_vdd_type(&mut self, slice: &[u8], mut offset: usize) -> usize {

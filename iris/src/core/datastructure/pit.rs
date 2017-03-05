@@ -7,8 +7,7 @@ use std::fs::File;
 use std::path::Path;
 
 use common::name::Name as Name;
-use core::packet::message::Message as Message;
-use core::packet as Packet;
+use core::packet::Packet as Packet;
 use common::identifier;
 
 pub struct PITEntry {
@@ -29,19 +28,19 @@ pub struct PIT {
     entries: Vec<PITEntry>
 }
 
-fn compare_vectors(x: &Vec<u8>, y: &Vec<u8>) -> (bool) {
-    if x.len() == y.len() {
-        let mut index = 0;
-        while index < x.len() {
-            if x[index] != y[index] {
-                return false;
-            }
-            index = index + 1;
-        }
-        return true;
-    }
-    return false;
-}
+// fn compare_vectors(x: &Vec<u8>, y: &Vec<u8>) -> (bool) {
+//     if x.len() == y.len() {
+//         let mut index = 0;
+//         while index < x.len() {
+//             if x[index] != y[index] {
+//                 return false;
+//             }
+//             index = index + 1;
+//         }
+//         return true;
+//     }
+//     return false;
+// }
 
 impl PIT {
     pub fn new() -> PIT {
@@ -50,7 +49,7 @@ impl PIT {
         }
     }
 
-    // pub fn lookup(&self, target: &Message) -> Option<&PITEntry> {
+    // pub fn lookup(&self, target: &Packet) -> Option<&PITEntry> {
     //     for entry in self.entries.iter() {
     //
     //         let target_name = target.get_name();
@@ -64,7 +63,7 @@ impl PIT {
     //     return None;
     // }
 
-    pub fn lookup(&mut self, target: &Message) -> Option<(&mut PITEntry, usize)> {
+    pub fn lookup(&mut self, target: &Packet) -> Option<(&mut PITEntry, usize)> {
         let mut index: usize = 0;
         // let target_identifier = target.identifier;
         for entry in self.entries.iter_mut() {
@@ -79,7 +78,7 @@ impl PIT {
 
     // Can only be called by the owner! Oof!
     // pub fn insert(&mut self, target: &Name, key_id_restr: &Vec<u8>, hash_restr: &Vec<u8>, new_face: usize) -> (bool) {
-    pub fn insert(&mut self, target: &Message, new_face: usize) -> (bool) {
+    pub fn insert(&mut self, target: &Packet, new_face: usize) -> (bool) {
         let mut new_entry: Option<PITEntry> = None;
         match self.lookup(target) {
             Some((entry, index)) => {
@@ -107,7 +106,7 @@ impl PIT {
         return false;
     }
 
-    pub fn flush(&mut self, target: &Message) -> (bool) {
+    pub fn flush(&mut self, target: &Packet) -> (bool) {
         let mut target_index = 0;
         match self.lookup(target) {
             Some((entry, index)) => {
@@ -144,7 +143,7 @@ fn test_pit_insert() {
     let mut pit = PIT::new();
 
     // 1. decode the packet
-    let msg = match Packet::decode_packet(buffer) {
+    let msg = match Packet::decode(buffer, 0) {
         Ok(msg) => {
             let mut face = 5;
             let mut result = pit.insert(&msg, face);
@@ -179,7 +178,7 @@ fn test_pit_lookup() {
     let mut pit = PIT::new();
 
     // 1. decode the packet
-    let msg = match Packet::decode_packet(buffer) {
+    let msg = match Packet::decode(buffer, 0) {
         Ok(msg) => msg,
         Err(why) => panic!("Failed to decode the packet"),
     };
@@ -205,7 +204,7 @@ fn test_pit_lookup() {
     let data_buffer = &data_file_contents[..]; // take reference to the entire thing (i.e., a slice)nt flags = fcntl(fwd_state->fd, F_GETFL, NULL);
 
     // 3. decode the content object
-    match Packet::decode_packet(data_buffer) {
+    match Packet::decode(data_buffer, 0) {
         Ok(content) => {
             let result = pit.lookup(&content);
             match result {
@@ -239,7 +238,7 @@ fn test_pit_flush() {
 
     let mut pit = PIT::new();
 
-    let msg = match Packet::decode_packet(buffer) {
+    let msg = match Packet::decode(buffer, 0) {
         Ok(msg) => msg,
         Err(why) => panic!("Failed to decode the packet"),
     };

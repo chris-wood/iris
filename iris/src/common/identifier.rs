@@ -3,7 +3,7 @@ use common::name::Name as Name;
 
 #[derive(Clone, Debug)]
 pub struct Identifier {
-    name: Name,
+    pub name: Name,
     key_id: Vec<u8>,
     content_id: Vec<u8>,
 }

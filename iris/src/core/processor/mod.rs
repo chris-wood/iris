@@ -7,7 +7,7 @@ use core::packet;
 use core::Forwarder as Forwarder;
 use core::ForwarderResult as ForwarderResult;
 use core::ForwarderResponseResult as ForwarderResponseResult;
-use core::packet::message::Message as Message;
+use core::packet::Packet as Packet;
 use common::name::Name as Name;
 
 pub struct Processor<'a> {
@@ -18,7 +18,7 @@ pub struct Processor<'a> {
 pub enum ProcessorError {
     InternalError,
     NotImplementedYet,
-    UnsupportedMessageType
+    UnsupportedPacketType
 }
 
 impl<'a> Processor<'a> {
@@ -79,7 +79,7 @@ impl<'a> Processor<'a> {
     }
 
     // TODO: extract the send functions to separate functions
-    fn process_interest<'b>(&mut self, msg: &'b Message, incoming_face: usize) -> Result<(Option<&'b Message>, Vec<usize>), ProcessorError> {
+    fn process_interest<'b>(&mut self, msg: &'b Packet, incoming_face: usize) -> Result<(Option<&'b Packet>, Vec<usize>), ProcessorError> {
         match self.fwd.process_interest(msg, incoming_face) {
             Ok((ForwarderResult::CacheHit, msg, ids)) => { // content, return it
                 // let inner_msg = msg.unwrap();
@@ -90,7 +90,7 @@ impl<'a> Processor<'a> {
             Ok((ForwarderResult::PitHit, _, _)) => { // do nothing, this is OK
                 return Err(ProcessorError::NotImplementedYet);
             },
-            Ok ((ForwarderResult::ForwardMessage, msg, ids)) => { // interest, forward it
+            Ok ((ForwarderResult::ForwardPacket, msg, ids)) => { // interest, forward it
                 return Ok((msg, ids));
             },
             Err(e) => {
@@ -100,11 +100,11 @@ impl<'a> Processor<'a> {
         return Err(ProcessorError::NotImplementedYet);
     }
 
-    fn process_content<'b>(&mut self, msg: &'b Message, incoming_face: usize) -> Result<(Option<&'b Message>, Vec<usize>), ProcessorError> {
+    fn process_content<'b>(&mut self, msg: &'b Packet, incoming_face: usize) -> Result<(Option<&'b Packet>, Vec<usize>), ProcessorError> {
         println!("Processing a content object.");
 
         match self.fwd.process_response(msg, incoming_face) {
-            Ok((ForwarderResponseResult::ForwardMessage, ids)) => {
+            Ok((ForwarderResponseResult::ForwardPacket, ids)) => {
                 return Ok((Some(msg), ids));
             }, Err(e) => {
                 return Err(ProcessorError::InternalError);
@@ -114,7 +114,7 @@ impl<'a> Processor<'a> {
         return Err(ProcessorError::NotImplementedYet);
     }
 
-    pub fn process_message<'b>(&mut self, msg: &'b Message, incoming_face: usize) -> Result<(Option<&'b Message>, Vec<usize>), ProcessorError> {
+    pub fn process_message<'b>(&mut self, msg: &'b Packet, incoming_face: usize) -> Result<(Option<&'b Packet>, Vec<usize>), ProcessorError> {
         // TODO: wrap these up in state checker functions
         if msg.packet_type == core::packet::typespace::PacketType::Interest {
             return self.process_interest(msg, incoming_face);
@@ -122,7 +122,7 @@ impl<'a> Processor<'a> {
             return self.process_content(msg, incoming_face);
         } else {
             // TODO: interest return
-            return Err(ProcessorError::UnsupportedMessageType)
+            return Err(ProcessorError::UnsupportedPacketType)
         }
     }
 }

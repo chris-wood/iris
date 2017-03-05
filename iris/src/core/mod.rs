@@ -9,19 +9,19 @@ use core::datastructure::fib as fib;
 use core::datastructure::pit as pit;
 use core::datastructure::cs as cs;
 
-use core::packet::message::Message as Message;
+use core::packet::Packet as Packet;
 use common::name::Name as Name;
 
 #[derive(Debug)]
 pub enum ForwarderResult {
     CacheHit,
     PitHit,
-    ForwardMessage
+    ForwardPacket
 }
 
 #[derive(Debug)]
 pub enum ForwarderResponseResult {
-    ForwardMessage,
+    ForwardPacket,
 }
 
 #[derive(Debug)]
@@ -49,9 +49,9 @@ impl<'a> Forwarder<'a> {
         self.fib.insert(prefix, link_id);
     }
 
-    fn process_response(&mut self, msg: &Message, incoming_face: usize) -> Result<(ForwarderResponseResult, Vec<usize>), ForwarderError> {
+    fn process_response(&mut self, msg: &Packet, incoming_face: usize) -> Result<(ForwarderResponseResult, Vec<usize>), ForwarderError> {
         let faces: Vec<usize>;
-        let request: &Message;
+        let request: &Packet;
 
         match self.pit.lookup(msg) {
             Some((entry, index)) => {
@@ -67,10 +67,10 @@ impl<'a> Forwarder<'a> {
 
         self.pit.flush(msg);
 
-        return Ok((ForwarderResponseResult::ForwardMessage, faces));
+        return Ok((ForwarderResponseResult::ForwardPacket, faces));
     }
 
-    fn process_interest<'b>(&mut self, msg: &'b Message, incoming_face: usize) -> Result<(ForwarderResult, Option<&'b Message>, Vec<usize>), ForwarderError> {
+    fn process_interest<'b>(&mut self, msg: &'b Packet, incoming_face: usize) -> Result<(ForwarderResult, Option<&'b Packet>, Vec<usize>), ForwarderError> {
         let cs = &self.cs;
         let cs_match = match cs.lookup(msg) {
             Some(entry) => {
@@ -97,7 +97,7 @@ impl<'a> Forwarder<'a> {
                 match fib.lookup(msg) {
                     Some(entry) => {
                         pit.insert(&msg, incoming_face);
-                        return Ok((ForwarderResult::ForwardMessage, Some(msg), entry.faces.clone()));
+                        return Ok((ForwarderResult::ForwardPacket, Some(msg), entry.faces.clone()));
                     },
                     None => {
                         return Err(ForwarderError::NoRouteInFib);
