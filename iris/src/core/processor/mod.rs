@@ -100,8 +100,6 @@ impl<'a> Processor<'a> {
     }
 
     fn process_content<'b>(&mut self, msg: &'b Packet, incoming_face: usize) -> Result<(Option<&'b Packet>, Vec<usize>), ProcessorError> {
-        println!("Processing a content object.");
-
         match self.fwd.process_response(msg, incoming_face) {
             Ok((ForwarderResponseResult::ForwardPacket, ids)) => {
                 return Ok((Some(msg), ids));
