@@ -107,11 +107,12 @@ impl Message {
         }
 
         // Check to see if we've reached the end of the packet
-        if (start_offset + (length as usize)) == offset {
+        if (offset - start_offset == (length as usize)) {
             return Ok(msg)
         }
 
         // Check what's next
+        // TODO(caw): read until the length is reached
         next_type = decoder::read_u16(slice, offset); offset += 2;
         next_length = decoder::read_u16(slice, offset); offset += 2;
         if next_type == 1 {
@@ -123,7 +124,7 @@ impl Message {
         return Ok(msg)
     }
 
-    fn decode_tlv_name_value(&mut self, slice: &[u8], plength: u16,  mut offset: usize) -> (usize) {
+    fn decode_tlv_name_value(&mut self, slice: &[u8], plength: u16, mut offset: usize) -> (usize) {
         let target: usize = (plength as usize) + offset;
         while offset < target {
             let name_segment_type: u16 = decoder::read_u16(slice, offset); offset += 2;

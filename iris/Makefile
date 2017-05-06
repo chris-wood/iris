@@ -1,5 +1,5 @@
 all:
-	cargo run --verbose ../data/test_interest.bin ../data/test_data.bin 
+	cargo run --verbose ../data/test_interest.bin ../data/test_data.bin
 
-test: 
-	RUST_BACKTRACE=1 cargo test
+check:
+	RUST_BACKTRACE=1 cargo test -- --nocapture

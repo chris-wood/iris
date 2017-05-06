@@ -180,19 +180,13 @@ fn test_name_create_from_bytes() {
 #[test]
 fn test_name_create_from_string() {
     let mut n1 = Name::create_from_string("/hello".to_owned()).unwrap();
-    print!("1: ");
     n1.display();
-    println!("");
 
     let mut n2 = Name::create_from_string("/hello/".to_owned()).unwrap();
-    print!("2: ");
     n2.display();
-    println!("");
 
     let mut n3 = Name::create_from_string("hello/".to_owned()).unwrap();
-    print!("3: ");
     n3.display();
-    println!("");
 
     assert!(n1.equals(&n2));
     assert!(n1.equals(&n3));

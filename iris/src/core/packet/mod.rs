@@ -72,15 +72,20 @@ impl Packet {
                 packet.packet_type = packet_type;
 
                 // Loop while haven't decoded the entire thing
+                let start_offset = offset;
                 while offset < plength as usize {
                     match packet.decode_tlv_toplevel(slice, plength, offset) {
-                        Ok(n) => offset = offset + n,
-                        Err(e) => return Err(e),
+                        Ok(n) => {
+                            offset = n
+                        },
+                        Err(e) => {
+                            return Err(e);
+                        }
                     }
                 }
 
                 // If we've run over the packet length, fail out
-                if offset > plength as usize {
+                if offset > (start_offset + plength as usize) {
                     return Err(decoder::DecoderError::MalformedPacket);
                 }
 
@@ -93,7 +98,6 @@ impl Packet {
         while offset < (plength as usize) {
             let top_type: u16 = decoder::read_u16(slice, offset); offset += 2;
             let top_length: u16 = decoder::read_u16(slice, offset); offset += 2;
-            offset += top_length as usize;
 
             if top_type == (typespace::TopLevelType::Interest as u16) {
                 match message::Message::decode(slice, top_length, offset) {
@@ -115,6 +119,8 @@ impl Packet {
             } else {
                 // Swallow this unknown TLV and continue onwards
             }
+
+            offset += top_length as usize;
         }
 
         return Ok(offset)
