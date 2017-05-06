@@ -198,7 +198,7 @@ fn test_name_len() {
     let n1 = Name::create_from_string("/hello".to_owned()).unwrap();
     assert!(n1.len() == 5);
 
-    let n2 = Name::create_from_string("/hello/world/man".to_owned()).unwrap();
+    let n2 = Name::create_from_string("/hello/world/foo".to_owned()).unwrap();
     assert!(n2.len() == 13);
 }
 
@@ -207,7 +207,7 @@ fn test_name_number_of_components() {
     let n1 = Name::create_from_string("/hello".to_owned()).unwrap();
     assert!(n1.number_of_components() == 1);
 
-    let n2 = Name::create_from_string("/hello/world/man".to_owned()).unwrap();
+    let n2 = Name::create_from_string("/hello/world/foo".to_owned()).unwrap();
     assert!(n2.number_of_components() == 3);
 }
 
