@@ -1,5 +1,10 @@
 # iris
+
+[![Build Status](https://travis-ci.org/chris-wood/iris.svg?branch=master)](https://travis-ci.org/chris-wood/iris)
+
 Prototype iris forwarder written in Rust to test CCNx interoperability
+
+## Setup 
 
 Receiver:
   ./receiver 9697 ~/Projects/iris/data/hello_data
