@@ -6,6 +6,7 @@ pub enum TopLevelType {
     ValidationPayload = 0x0004,
     NamedNetworkFragment = 0x0005,
     BeginEndFragment = 0x0006,
+    Invalid = 0xFFFF,
 }
 
 #[derive(PartialEq, Clone, Debug)]
@@ -14,7 +15,7 @@ pub enum PacketType {
     ContentObject = 0x01,
     InterestReturn = 0x02,
     Fragment = 0x03,
-    Invalid = 0xFF
+    Invalid = 0xFF,
 }
 
 pub fn ParsePacketType(val: u8) -> PacketType {

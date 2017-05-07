@@ -12,7 +12,7 @@ pub fn decode(slice: &[u8]) -> Result<Packet, decoder::DecoderError> {
 }
 
 #[derive(PartialEq, Clone, Debug)]
-struct FixedHeader {
+pub struct FixedHeader {
     packet_type: typespace::PacketType,
     packet_specific_bytes: [u8; 3],
 }
@@ -158,5 +158,9 @@ impl Packet {
 
     pub fn get_packet_type(&self) -> typespace::PacketType {
         self.header.packet_type.clone()
+    }
+
+    pub fn get_fixed_header(&self) -> FixedHeader {
+        self.header.clone()
     }
 }

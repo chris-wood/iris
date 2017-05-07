@@ -115,6 +115,15 @@ impl<'a> Processor<'a> {
         // TOOD(cawood): implement the BEF logic here
         // See: https://tools.ietf.org/html/draft-mosko-icnrg-beginendfragment-02
 
+        // Check to see if it's a BEF fragment
+        let header: packet::FixedHeader = msg.get_fixed_header();
+        /*
+        if begin, start storing some state
+        else if end, end storing state
+        else if idle, pass,
+        else, middle fragment, so parse and append to the right state bucket
+        */
+
         return Err(ProcessorError::NotImplementedYet);
     }
 
