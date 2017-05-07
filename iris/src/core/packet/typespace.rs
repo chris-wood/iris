@@ -3,7 +3,9 @@ pub enum TopLevelType {
     Interest = 0x0001,
     ContentObject = 0x0002,
     ValidationAlgorithm = 0x0003,
-    ValidationPayload = 0x0004
+    ValidationPayload = 0x0004,
+    NamedNetworkFragment = 0x0005,
+    BeginEndFragment = 0x0006,
 }
 
 #[derive(PartialEq, Clone, Debug)]
@@ -11,6 +13,7 @@ pub enum PacketType {
     Interest = 0x00,
     ContentObject = 0x01,
     InterestReturn = 0x02,
+    Fragment = 0x03,
     Invalid = 0xFF
 }
 
@@ -19,6 +22,7 @@ pub fn ParsePacketType(val: u8) -> PacketType {
         0x00 => PacketType::Interest,
         0x01 => PacketType::ContentObject,
         0x02 => PacketType::InterestReturn,
+        0x03 => PacketType::Fragment,
         _    => PacketType::Invalid,
     }
 }
@@ -32,7 +36,17 @@ enum HopByHopHeaderType {
 #[derive(PartialEq, Clone, Debug)]
 enum MessageType {
     Name = 0x0000,
-    Payload = 0x0001
+    Payload = 0x0001,
+    NamedFragment = 0x0002,
+}
+
+#[derive(PartialEq, Clone, Debug)]
+enum NamedFragmentType {
+    FragmentStart = 0x0000,
+    FragmentData = 0x0001,
+    SegmentStart = 0x0002,
+    SegmentData = 0x0003,
+    SegmentEnd = 0x0004,
 }
 
 #[derive(PartialEq, Clone, Debug)]
