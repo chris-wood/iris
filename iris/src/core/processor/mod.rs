@@ -111,12 +111,21 @@ impl<'a> Processor<'a> {
         return Err(ProcessorError::NotImplementedYet);
     }
 
+    fn process_fragment<'b>(&mut self, msg: &'b Packet, incoming_face: usize) -> Result<(Option<&'b Packet>, Vec<usize>), ProcessorError> {
+        // TOOD(cawood): implement the BEF logic here
+        // See: https://tools.ietf.org/html/draft-mosko-icnrg-beginendfragment-02
+
+        return Err(ProcessorError::NotImplementedYet);
+    }
+
     pub fn process_message<'b>(&mut self, msg: &'b Packet, incoming_face: usize) -> Result<(Option<&'b Packet>, Vec<usize>), ProcessorError> {
         // TODO: wrap these up in state checker functions
         if msg.get_packet_type() == core::packet::typespace::PacketType::Interest {
             return self.process_interest(msg, incoming_face);
         } else if msg.get_packet_type() == core::packet::typespace::PacketType::ContentObject {
             return self.process_content(msg, incoming_face);
+        } else if msg.get_packet_type() == core::packet::typespace::PacketType::Fragment {
+            return self.process_fragment(msg, incoming_face);
         } else {
             // TODO: interest return
             return Err(ProcessorError::UnsupportedPacketType)
