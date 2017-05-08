@@ -7,41 +7,38 @@ use core::packet::decoder;
 
 #[derive(Clone, Debug)]
 pub struct BeginEndFragment {
-    // content_id: [u8; 32], // 32B content ID
-    // offset: u16, // data offset in the overall stream
-    // fragment_bytes: Vec<u8>, // the actual bytes to store
+    content_id: Vec<u8>, // 32B content ID
+    offset: u16, // data offset in the overall stream
+    fragment_bytes: Vec<u8>, // the actual bytes to store
 }
 
 impl BeginEndFragment {
     pub fn empty() -> BeginEndFragment {
         BeginEndFragment {
-            //
+            content_id: Vec::new(),
+            offset: 0,
+            fragment_bytes: Vec::new(),
         }
     }
 
     pub fn decode(slice: &[u8], length: u16, mut offset: usize) -> Result<BeginEndFragment, decoder::DecoderError> {
+        // Read the content ID
+        let content_id = decoder::read(slice, offset, 32); offset += 32;
+        // XXX: check for remaining byets
+        // return Err(decoder::DecoderError::MalformedPacket);
+
+        // Read the offfet
+        let frag_offset = decoder::read_u16(slice, offset); offset += 2;
+        // XXX: check for remaining byets
+
+        // Read the remaints of the data, up to the length
+        let contents = decoder::read(slice, offset, (length as usize) - offset); offset = length as usize;
+
         let mut bef = BeginEndFragment {
-            // XXX
+            content_id: content_id.to_vec(),
+            offset: frag_offset,
+            fragment_bytes: contents.to_vec(),
         };
-
-// XXX: hash digest that points to the parent packet
-// XXX: offset into the fragment
-// XXX: data
-
-        // let mut val_type: u16 = decoder::read_u16(slice, offset); offset += 2;
-        // let mut val_length: u16 = decoder::read_u16(slice, offset); offset += 2;
-        // vdd.validation_type = typespace::ParseValidationType(val_length);
-        //
-        // while offset < val_length as usize && offset < length as usize {
-        //     offset = vdd.decode_vdd_type(slice, offset);
-        //     if offset == 0 {
-        //         return Err(decoder::DecoderError::MalformedPacket);
-        //     }
-        // }
-        //
-        // if offset > length as usize {
-        //     return Err(decoder::DecoderError::MalformedPacket);
-        // }
 
         return Ok(bef);
     }
