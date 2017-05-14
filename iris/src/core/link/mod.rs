@@ -33,14 +33,20 @@ pub enum LinkType {
 struct TCPLink {
     socket: TcpStream,
     id: Token
-    // interest: EventSet
 }
 
 impl TCPLink {
-    fn read<'a,'b>(&mut self) -> Option<(Box<[u8]>, usize)> {
+    fn read<'a,'b>(&self) -> Option<(Box<[u8]>, usize)> {
         loop {
-            let mut buf = [0; 4096];
-            match self.socket.read(&mut buf) {
+            let mut buf = [0; 4096]; // 4K MTU
+            // let mut data = vec![];
+            // data.extend_from_slice(&buf);
+            // let iovec: IoVec = data.into();
+            // let mut buffers = [iovec];
+
+            // let mut clone = self.socket.clone();
+            let mut stream_clone = self.socket.try_clone().unwrap();
+            match stream_clone.read(&mut buf) {
                 Err(e) => {
                     println!("Error while reading socket: {:?}", e);
                     break;
@@ -57,23 +63,23 @@ impl TCPLink {
         return None;
     }
 
-    fn write(&mut self, msg: core::packet::message::Message) {
-        let bytes: Vec<u8> = msg.bytes();
-        self.socket.write(&bytes[..]);
+    fn write(&self, msg: &core::packet::Packet) {
+        let iovec: &IoVec = msg.bytes.as_slice().into();
+        let buffers = [iovec];
+        self.socket.write_bufs(&buffers); // &msg.bytes[..]
     }
 
     fn new(token: Token, socket: TcpStream) -> TCPLink {
         TCPLink {
             id: token,
             socket: socket
-            // interest: EventSet::readable()
         }
     }
 }
 
 pub struct LinkManager<'a,'b : 'a> {
     processor: &'a mut core::processor::Processor<'b>,
-    links: HashMap<Token, TCPLink>, // TODO: make this a generic type of Link
+    links: HashMap<Token, TCPLink>, // TODO(cawood): make this a generic type of Link
     link_names: HashMap<String, Token>,
     token_counter: usize,
     tcp_socket: TcpListener,
@@ -130,62 +136,66 @@ impl<'a,'b> LinkManager<'a,'b> {
                         }
                     },
                     SERVER_UDP_TOKEN => {
-                        // XXX: move to handle_udp_packet()
+                        unreachable!()
                     },
                     SERVER_CTL_TOKEN => {
                         // TODO(cawood): implement a TLS connection
+                        unreachable!()
                     },
                     token => {
-                        unreachable!()
-                        // XXX: move to the token
-                        // let mut ingress_link = self.links.get_mut(&token).unwrap();
-                        // let link_id = ingress_link.id;
-                        //
-                        // match ingress_link.read() {
-                        //     Some((buffer, length)) => {
-                        //         match core::packet::decode_packet(&buffer[0..length]) {
-                        //             Ok(msg) => {
-                        //                 match self.processor.process_message(&msg, link_id.as_usize()) {
-                        //                     Ok((Some(output_message), output_ids)) => { // forward the message to every ID in the list
-                        //                         for link_id in output_ids {
-                        //                             println!("FORWARD TO ID {}", link_id);
-                        //                             let token = Token(link_id as usize);
-                        //
-                        //                             let sender = event_loop.channel();
-                        //                             let msg_copy = output_message.clone();
-                        //                             sender.send((token, msg_copy));
-                        //                         }
-                        //                     },
-                        //                     Ok((None, _)) => {
-                        //                         // pass
-                        //                     }
-                        //                     Err(e) => {
-                        //                         println!("Error: {:?}", e);
-                        //                         // pass
-                        //                     }
-                        //                 }
-                        //             },
-                        //             Err(_) => {},
-                        //         };
-                        //     },
-                        //     None => { /* pass */ }
-                        // };
+                        let ingress_link = self.links.get(&token).unwrap();
+                        let link_id = ingress_link.id;
+
+                        match ingress_link.read() {
+                            Some((buffer, length)) => {
+                                match core::packet::decode(&buffer[0..length]) {
+                                    Ok(msg) => {
+                                        match self.processor.process_message(&msg, From::from(link_id)) {
+                                            Ok((Some(output_message), output_ids)) => {
+                                                // Forward the message to every ID in the list
+                                                for link_id in output_ids {
+                                                    let token = Token(link_id as usize);
+                                                    self.send_msg(&token, output_message);
+                                                    // let mut link = self.links.get_mut(&token).unwrap();
+                                                    // link.write(output_message);
+                                                }
+                                            },
+                                            Ok((None, _)) => {
+                                                // pass
+                                            }
+                                            Err(e) => {
+                                                println!("Error: {:?}", e);
+                                                // pass
+                                            }
+                                        }
+                                    },
+                                    Err(_) => {},
+                                };
+                            },
+                            None => { /* pass */ }
+                        };
                     }
                 }
             }
         }
     }
 
+    fn send_msg(&self, token: &Token, msg: &core::packet::Packet) {
+        let link = self.links.get(token).unwrap();
+        link.write(msg);
+    }
+
     // fn get_link_id_by_name(&mut self, nick: &String) -> Option<&mut Token> {
     //     return self.link_names.get_mut(nick);
     // }
     //
-    // fn get_link_by_id(&mut self, token: &Token) -> Option<&mut TCPLink> {
-    //     if self.links.contains_key(token) {
-    //         return self.links.get_mut(token);
-    //     }
-    //     return None;
-    // }
+
+    fn get_link_by_id(&mut self, token: &Token) -> Option<&mut TCPLink> {
+        if self.links.contains_key(token) {
+            return self.links.get_mut(token);
+        }
+        return None;
+    }
 
     // pub fn process_control(&mut self, event_loop: &mut EventLoop<LinkManager>, msg: String) -> Result<bool, ControlMessageError> {
     //     let params: Vec<&str> = msg.trim().split(" ").collect();

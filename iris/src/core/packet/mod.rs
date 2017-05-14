@@ -28,7 +28,7 @@ impl FixedHeader {
 
 #[derive(Clone, Debug)]
 pub struct Packet {
-    bytes: Vec<u8>,
+    pub bytes: Vec<u8>,
     header: FixedHeader,
     message: message::Message,
     validation: validation::Validation,
