@@ -92,19 +92,6 @@ impl<'a,'b> LinkManager<'a,'b> {
         // self.links.get(&token).unwrap().write(msg);
     }
 
-    // pub fn new(tcp_socket: TcpListener, udp_socket: UdpSocket, ctl_socket: UdpSocket,
-    //     processor: &'a mut core::processor::Processor<'b>) -> LinkManager<'a,'b> {
-        // LinkManager {
-        //     processor: processor,
-        //     links: HashMap::new(),
-        //     link_names: HashMap::new(),
-        //     tcp_socket: tcp_socket,
-        //     udp_socket: udp_socket,
-        //     ctl_socket: ctl_socket,
-        //     token_counter: SERVER_BASE_TOKEN.as_usize(),
-        // }
-    // }
-
     pub fn new(poller: mio::Poll, tcp_socket: TcpListener, udp_socket: UdpSocket, ctl_socket: UdpSocket,
         processor: &'a mut core::processor::Processor<'b>) -> LinkManager<'a,'b> {
         // XXX: save the sockets and polls
@@ -122,29 +109,69 @@ impl<'a,'b> LinkManager<'a,'b> {
     }
 
     pub fn service(&mut self) {
-        let mut events = Events::with_capacity(1024);
+        let mut events = Events::with_capacity(4096);
 
         // Run forever
         loop {
             self.poller.poll(&mut events, None).unwrap();
 
             for event in events.iter() {
-
-                
-                // handler.process(event)
-                // match event.token() {
-                //     SERVER => {
-                //         // Accept and drop the socket immediately, this will close
-                //         // the socket and notify the client of the EOF.
-                //         let _ = server.accept();
-                //     }
-                //     CLIENT => {
-                //         // The server just shuts down the socket, let's just exit
-                //         // from our event loop.
-                //         return;
-                //     }
-                //     _ => unreachable!(),
-                // }
+                match event.token() {
+                    SERVER_TCP_TOKEN => {
+                        match self.tcp_socket.accept() {
+                            Ok((stream, addr)) => {
+                                self.token_counter += 1;
+                                let new_token = Token(self.token_counter);
+                                let link = TCPLink::new(new_token.clone(), stream);
+                                self.links.insert(new_token, link);
+                                self.poller.register(&self.links[&new_token].socket, new_token, Ready::readable(), PollOpt::edge());
+                            },
+                            Err(e) => {},
+                        }
+                    },
+                    SERVER_UDP_TOKEN => {
+                        // XXX: move to handle_udp_packet()
+                    },
+                    SERVER_CTL_TOKEN => {
+                        // TODO(cawood): implement a TLS connection
+                    },
+                    token => {
+                        unreachable!()
+                        // XXX: move to the token
+                        // let mut ingress_link = self.links.get_mut(&token).unwrap();
+                        // let link_id = ingress_link.id;
+                        //
+                        // match ingress_link.read() {
+                        //     Some((buffer, length)) => {
+                        //         match core::packet::decode_packet(&buffer[0..length]) {
+                        //             Ok(msg) => {
+                        //                 match self.processor.process_message(&msg, link_id.as_usize()) {
+                        //                     Ok((Some(output_message), output_ids)) => { // forward the message to every ID in the list
+                        //                         for link_id in output_ids {
+                        //                             println!("FORWARD TO ID {}", link_id);
+                        //                             let token = Token(link_id as usize);
+                        //
+                        //                             let sender = event_loop.channel();
+                        //                             let msg_copy = output_message.clone();
+                        //                             sender.send((token, msg_copy));
+                        //                         }
+                        //                     },
+                        //                     Ok((None, _)) => {
+                        //                         // pass
+                        //                     }
+                        //                     Err(e) => {
+                        //                         println!("Error: {:?}", e);
+                        //                         // pass
+                        //                     }
+                        //                 }
+                        //             },
+                        //             Err(_) => {},
+                        //         };
+                        //     },
+                        //     None => { /* pass */ }
+                        // };
+                    }
+                }
             }
         }
     }
@@ -224,53 +251,7 @@ impl<'a,'b> LinkManager<'a,'b> {
     // http://carllerche.github.io/mio/mio/struct.Token.html
     pub fn process(&mut self, event: Event) {
         if event.readiness().is_readable() {
-            match event.token() {
-                SERVER_TCP_TOKEN => {
-                    // let client_socket = match self.tcp_socket.accept() {
-                    // XXX: move to handle_incoming_tcp_connection()
-                },
-                SERVER_UDP_TOKEN => {
-                    // XXX: move to handle_udp_packet()
-                },
-                SERVER_CTL_TOKEN => {
-                    // XXX: move to handle_control_packet()
-                },
-                token => {
-                    // XXX: move to the token
-                    // let mut ingress_link = self.links.get_mut(&token).unwrap();
-                    // let link_id = ingress_link.id;
-                    //
-                    // match ingress_link.read() {
-                    //     Some((buffer, length)) => {
-                    //         match core::packet::decode_packet(&buffer[0..length]) {
-                    //             Ok(msg) => {
-                    //                 match self.processor.process_message(&msg, link_id.as_usize()) {
-                    //                     Ok((Some(output_message), output_ids)) => { // forward the message to every ID in the list
-                    //                         for link_id in output_ids {
-                    //                             println!("FORWARD TO ID {}", link_id);
-                    //                             let token = Token(link_id as usize);
-                    //
-                    //                             let sender = event_loop.channel();
-                    //                             let msg_copy = output_message.clone();
-                    //                             sender.send((token, msg_copy));
-                    //                         }
-                    //                     },
-                    //                     Ok((None, _)) => {
-                    //                         // pass
-                    //                     }
-                    //                     Err(e) => {
-                    //                         println!("Error: {:?}", e);
-                    //                         // pass
-                    //                     }
-                    //                 }
-                    //             },
-                    //             Err(_) => {},
-                    //         };
-                    //     },
-                    //     None => { /* pass */ }
-                    // };
-                }
-            }
+
         }
     }
 }
@@ -292,16 +273,16 @@ impl<'a,'b> LinkManager<'a,'b> {
 //                         Ok(Some((sock, addr))) => sock
 //                     };
 //
-//                     self.token_counter += 1;
-//                     let new_token = Token(self.token_counter);
-//
-//                     println!("Spawning a new TCP link with token {}", new_token.as_usize());
-//
-//                     let link = TCPLink::new(new_token.clone(), client_socket);
-//                     self.links.insert(new_token, link);
-//                     event_loop.register(&self.links[&new_token].socket,
-//                                             new_token, EventSet::readable(),
-//                                             PollOpt::edge() | PollOpt::oneshot()).unwrap();
+                    // self.token_counter += 1;
+                    // let new_token = Token(self.token_counter);
+                    //
+                    // println!("Spawning a new TCP link with token {}", new_token.as_usize());
+                    //
+                    // let link = TCPLink::new(new_token.clone(), client_socket);
+                    // self.links.insert(new_token, link);
+                    // event_loop.register(&self.links[&new_token].socket,
+                    //                         new_token, EventSet::readable(),
+                    //                         PollOpt::edge() | PollOpt::oneshot()).unwrap();
 //                 },
 //                 SERVER_UDP_TOKEN => {
 //                     let mut buf = [0; 4096]; // 4k MTU for UDP, by default

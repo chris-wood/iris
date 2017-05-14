@@ -117,6 +117,8 @@ impl<'a> Processor<'a> {
 
         // Check to see if it's a BEF fragment
         let header: packet::FixedHeader = msg.get_fixed_header();
+
+        
         /*
         if begin, start storing some state
         else if end, end storing state
